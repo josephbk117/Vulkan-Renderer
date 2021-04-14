@@ -16,6 +16,9 @@
     <Filter Include="Resource Files\Shaders">
       <UniqueIdentifier>{bb5f4980-e1a0-4acb-b560-8e6d59b2b802}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Misc">
+      <UniqueIdentifier>{ea9905b9-c678-482c-adc0-d46d3e245b14}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\Application.cpp">
@@ -31,6 +34,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Src\RenderPipeline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\MemoryPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,6 +59,9 @@
     <ClInclude Include="Src\ConstantsAndDefines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Src\MemoryPool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Res\Shaders\simple_shader.vert">
@@ -60,6 +69,18 @@
     </None>
     <None Include="Res\Shaders\simple_shader.frag">
       <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Res\CompileShaderswGLSLC.bat">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="Res\CompiledShaders\simple_shader.vert.spv">
+      <Filter>Misc</Filter>
+    </None>
+    <None Include="Res\CompiledShaders\simple_shader.frag.spv">
+      <Filter>Misc</Filter>
+    </None>
+    <None Include="Res\glslc.exe">
+      <Filter>Misc</Filter>
     </None>
   </ItemGroup>
 </Project>

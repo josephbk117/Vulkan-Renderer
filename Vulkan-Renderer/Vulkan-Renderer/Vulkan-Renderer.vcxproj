@@ -149,6 +149,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Src\MemoryPool.cpp" />
     <ClCompile Include="Src\RenderPipeline.cpp" />
     <ClCompile Include="Src\Shader.cpp" />
     <ClCompile Include="Src\Application.cpp" />
@@ -156,6 +157,7 @@
     <ClCompile Include="Src\MainApp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\MemoryPool.h" />
     <ClInclude Include="Src\ConstantsAndDefines.h" />
     <ClInclude Include="Src\RenderPipeline.h" />
     <ClInclude Include="Src\Shader.h" />
@@ -164,6 +166,10 @@
     <ClInclude Include="Src\Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Res\CompiledShaders\simple_shader.frag.spv" />
+    <None Include="Res\CompiledShaders\simple_shader.vert.spv" />
+    <None Include="Res\CompileShaderswGLSLC.bat" />
+    <None Include="Res\glslc.exe" />
     <None Include="Res\Shaders\simple_shader.frag" />
     <None Include="Res\Shaders\simple_shader.vert" />
   </ItemGroup>
