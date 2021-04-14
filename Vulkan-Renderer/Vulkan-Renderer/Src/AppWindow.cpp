@@ -35,6 +35,11 @@ void ApplicationWindow::AppWindow::CreateVulkanWindowSurface(VkInstance instance
 	}
 }
 
+GLFWwindow* ApplicationWindow::AppWindow::GetWindow() const
+{
+	return windowPtr;
+}
+
 ApplicationWindow::AppWindow::~AppWindow()
 {
 	glfwDestroyWindow(windowPtr);

@@ -30,6 +30,7 @@ namespace ApplicationWindow
 		bool ShouldClose() const;
 		void PollInputs() const;
 		void CreateVulkanWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
+		GLFWwindow* GetWindow() const;
 
 	protected:
 		WindowProperties windowProps;

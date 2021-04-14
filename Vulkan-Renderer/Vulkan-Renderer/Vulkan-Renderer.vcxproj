@@ -155,6 +155,7 @@
     <ClCompile Include="Src\Application.cpp" />
     <ClCompile Include="Src\AppWindow.cpp" />
     <ClCompile Include="Src\MainApp.cpp" />
+    <ClCompile Include="Src\VulkanRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\MemoryPool.h" />
@@ -164,6 +165,7 @@
     <ClInclude Include="Src\Application.h" />
     <ClInclude Include="Src\AppWindow.h" />
     <ClInclude Include="Src\Utils.h" />
+    <ClInclude Include="Src\VulkanRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Res\CompiledShaders\simple_shader.frag.spv" />

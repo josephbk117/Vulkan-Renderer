@@ -11,6 +11,8 @@ Renderer::RenderPipeline::RenderPipeline(const std::string& vertShaderPath, cons
 
 void Renderer::RenderPipeline::CreateGraphicsPipeline(const std::string& vertShaderPath, const std::string& fragShaderPath)
 {
+	using namespace Utilities;
+
 	auto vertCode = Utils::ReadFile(vertShaderPath);
 	auto fragCode = Utils::ReadFile(fragShaderPath);
 

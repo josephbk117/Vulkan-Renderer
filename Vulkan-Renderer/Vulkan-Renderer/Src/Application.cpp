@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "VulkanRenderer.h"
 
 Application::Application()
 {
@@ -7,8 +8,12 @@ Application::Application()
 
 void Application::Run()
 {
+	renderer.Init(appWindow.GetWindow());
+
 	while (!appWindow.ShouldClose())
 	{
 		appWindow.PollInputs();
 	}
+
+	renderer.CleanUp();
 }

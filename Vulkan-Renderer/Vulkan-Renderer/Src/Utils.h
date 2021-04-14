@@ -3,24 +3,38 @@
 #include <string>
 #include <fstream>
 
-class Utils
+namespace Utilities
 {
-public:
-	static std::vector<char> ReadFile(const std::string& filePath)
+	struct QueueFamilyIndices
 	{
-		std::ifstream file(filePath, std::ios::ate | std::ios::binary);
-		if (!file.is_open())
+		int graphicsFamily = -1;
+
+		bool IsValid()
 		{
-			throw std::runtime_error("failed to open file : " + filePath);
+			return graphicsFamily >= 0;
 		}
+	};
 
-		const size_t fileSize = static_cast<size_t>(file.tellg());
-		std::vector<char> buffer(fileSize);
+	class Utils
+	{
+	public:
 
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
+		static std::vector<char> ReadFile(const std::string& filePath)
+		{
+			std::ifstream file(filePath, std::ios::ate | std::ios::binary);
+			if (!file.is_open())
+			{
+				throw std::runtime_error("failed to open file : " + filePath);
+			}
 
-		file.close();
-		return buffer;
-	}
-};
+			const size_t fileSize = static_cast<size_t>(file.tellg());
+			std::vector<char> buffer(fileSize);
+
+			file.seekg(0);
+			file.read(buffer.data(), fileSize);
+
+			file.close();
+			return buffer;
+		}
+	};
+}
