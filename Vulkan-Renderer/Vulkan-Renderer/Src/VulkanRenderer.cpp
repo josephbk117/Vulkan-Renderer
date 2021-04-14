@@ -59,11 +59,20 @@ void VulkanRenderer::CreateInstance()
 		throw std::runtime_error("VkInstance does not support required extensions");
 	}
 
+	std::vector<const char*> validationLayers = {
+	"VK_LAYER_KHRONOS_validation"
+	};
+
+	if (!CheckValidationLayerSupport(&validationLayers))
+	{
+		throw std::runtime_error("No required validation layer is supported");
+	}
+
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
 	createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
-	createInfo.enabledLayerCount = 0;
-	createInfo.ppEnabledLayerNames = nullptr;
+	createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+	createInfo.ppEnabledLayerNames = validationLayers.data();
 
 	VkResult vkResult = vkCreateInstance(&createInfo, nullptr, &instance);
 
@@ -165,6 +174,32 @@ bool VulkanRenderer::CheckDeviceSuitable(VkPhysicalDevice device) const
 {
 	QueueFamilyIndices indices = GetQueueFamilyIndices(device);
 	return indices.IsValid();
+}
+
+bool VulkanRenderer::CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const
+{
+	uint32_t layerCount = 0;
+	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+	std::vector<VkLayerProperties> availableLayers(layerCount);
+	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+	std::cout << "\nValidation Layers supported : " << layerCount;
+
+	for (const auto& layer : *validationLayers)
+	{
+		auto found = std::find_if(availableLayers.begin(), availableLayers.end(), [&](const VkLayerProperties& val)
+			{
+				return strcmp(layer, val.layerName);
+			});
+
+		if (found == std::end(availableLayers))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 Utilities::QueueFamilyIndices VulkanRenderer::GetQueueFamilyIndices(VkPhysicalDevice device) const

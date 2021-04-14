@@ -30,6 +30,7 @@ private:
 	void CreateLogicalDevice();
 	bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
 	bool CheckDeviceSuitable(VkPhysicalDevice device)const;
+	bool CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const;
 	QueueFamilyIndices GetQueueFamilyIndices(VkPhysicalDevice device)const;
 };
 
