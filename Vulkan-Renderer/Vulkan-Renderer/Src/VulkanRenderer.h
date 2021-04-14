@@ -23,9 +23,11 @@ private:
 
 	GLFWwindow* window = nullptr;
 	VkInstance instance;
+	VkQueue graphicsQueue;
 
 	void CreateInstance();
 	void GetPhysicalDevice()const;
+	void CreateLogicalDevice();
 	bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
 	bool CheckDeviceSuitable(VkPhysicalDevice device)const;
 	QueueFamilyIndices GetQueueFamilyIndices(VkPhysicalDevice device)const;

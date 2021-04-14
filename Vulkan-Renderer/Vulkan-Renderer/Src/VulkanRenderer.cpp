@@ -11,6 +11,7 @@ bool VulkanRenderer::Init(GLFWwindow* window)
 	{
 		CreateInstance();
 		GetPhysicalDevice();
+		CreateLogicalDevice();
 	}
 	catch (const std::runtime_error& e)
 	{
@@ -23,6 +24,7 @@ bool VulkanRenderer::Init(GLFWwindow* window)
 
 void VulkanRenderer::CleanUp()
 {
+	vkDestroyDevice(deviceHandle.logicalDevice, nullptr);
 	vkDestroyInstance(instance, nullptr);
 }
 
@@ -96,6 +98,36 @@ void VulkanRenderer::GetPhysicalDevice() const
 	{
 		throw std::runtime_error("Could not find vulkan compatible GPUs");
 	}
+}
+
+void VulkanRenderer::CreateLogicalDevice()
+{
+	QueueFamilyIndices indices = GetQueueFamilyIndices(deviceHandle.physicalDevice);
+
+	VkDeviceQueueCreateInfo queueCreateInfo = {};
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+	queueCreateInfo.queueCount = 1;
+	float priority = 1.0f;
+	queueCreateInfo.pQueuePriorities = &priority;
+
+	VkDeviceCreateInfo deviceCreateInfo = {};
+	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.queueCreateInfoCount = 1;
+	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+	deviceCreateInfo.enabledExtensionCount = 0;
+	deviceCreateInfo.ppEnabledExtensionNames = nullptr;
+
+	VkPhysicalDeviceFeatures deviceFeatures = {};
+	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+
+	VkResult vkResult = vkCreateDevice(deviceHandle.physicalDevice, &deviceCreateInfo, nullptr, &deviceHandle.logicalDevice);
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create vulkan logical device");
+	}
+
+	vkGetDeviceQueue(deviceHandle.logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
 }
 
 bool VulkanRenderer::CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions)
