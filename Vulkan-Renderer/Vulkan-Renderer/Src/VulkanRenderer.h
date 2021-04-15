@@ -24,13 +24,18 @@ private:
 	GLFWwindow* window = nullptr;
 	VkInstance instance;
 	VkQueue graphicsQueue;
+	VkDebugUtilsMessengerEXT debugMessenger;
 
 	void CreateInstance();
+	void CreateValidationDebugMessenger();
+	void DestroyValidationDebugMessenger();
 	void GetPhysicalDevice()const;
 	void CreateLogicalDevice();
 	bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
 	bool CheckDeviceSuitable(VkPhysicalDevice device)const;
 	bool CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const;
 	QueueFamilyIndices GetQueueFamilyIndices(VkPhysicalDevice device)const;
+
+	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,	void* pUserData);
 };
 

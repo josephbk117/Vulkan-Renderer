@@ -10,6 +10,7 @@ bool VulkanRenderer::Init(GLFWwindow* window)
 	try
 	{
 		CreateInstance();
+		CreateValidationDebugMessenger();
 		GetPhysicalDevice();
 		CreateLogicalDevice();
 	}
@@ -24,6 +25,7 @@ bool VulkanRenderer::Init(GLFWwindow* window)
 
 void VulkanRenderer::CleanUp()
 {
+	DestroyValidationDebugMessenger();
 	vkDestroyDevice(deviceHandle.logicalDevice, nullptr);
 	vkDestroyInstance(instance, nullptr);
 }
@@ -54,6 +56,8 @@ void VulkanRenderer::CreateInstance()
 		instanceExtensions.push_back(glfwExtensions[i]);
 	}
 
+	instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
 	if (!CheckInstanceExtensionSupport(&instanceExtensions))
 	{
 		throw std::runtime_error("VkInstance does not support required extensions");
@@ -79,6 +83,40 @@ void VulkanRenderer::CreateInstance()
 	if (vkResult != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create vulkan instance");
+	}
+}
+
+void VulkanRenderer::CreateValidationDebugMessenger()
+{
+	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	createInfo.pfnUserCallback = DebugCallback;
+	createInfo.pUserData = nullptr;
+
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+
+	if (func != nullptr)
+	{
+		func(instance, &createInfo, nullptr, &debugMessenger);
+	}
+	else
+	{
+		throw std::runtime_error("Could not create validation debug messenger");
+	}
+}
+
+void VulkanRenderer::DestroyValidationDebugMessenger()
+{
+	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+	if (func != nullptr)
+	{
+		func(instance, debugMessenger, nullptr);
+	}
+	else
+	{
+		throw std::runtime_error("Failed to destroy validation debug messenger");
 	}
 }
 
@@ -226,4 +264,20 @@ Utilities::QueueFamilyIndices VulkanRenderer::GetQueueFamilyIndices(VkPhysicalDe
 	}
 
 	return indices;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+{
+	std::cerr << "\nValidation layer ";
+	switch (messageSeverity)
+	{
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:std::cerr << " [Verbose]:"; break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:std::cerr << " [Info]:"; break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:std::cerr << " [Warning]:"; break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:	std::cerr << " [Error]:"; break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:break;
+	}
+
+	std::cerr << pCallbackData->pMessage;
+	return VK_FALSE;
 }
