@@ -66,9 +66,7 @@ void VulkanRenderer::CreateInstance()
 		throw std::runtime_error("VkInstance does not support required extensions");
 	}
 
-	std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
-	};
+	std::vector<const char*> validationLayers = VALIDATION_LAYERS;
 
 	if (!CheckValidationLayerSupport(&validationLayers))
 	{
