@@ -2,6 +2,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 #include <vector>
+#include <set>
 #include "Utils.h"
 
 using namespace Utilities;
@@ -24,6 +25,8 @@ private:
 	GLFWwindow* window = nullptr;
 	VkInstance instance;
 	VkQueue graphicsQueue;
+	VkQueue presentationQueue;
+	VkSurfaceKHR surface;
 	VkDebugUtilsMessengerEXT debugMessenger;
 
 	void CreateInstance();
@@ -31,11 +34,13 @@ private:
 	void DestroyValidationDebugMessenger();
 	void GetPhysicalDevice()const;
 	void CreateLogicalDevice();
-	bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions);
-	bool CheckDeviceSuitable(VkPhysicalDevice device)const;
+	void CreateSurface();
+	bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
+	bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
+	bool CheckDeviceSuitable(VkPhysicalDevice device) const;
 	bool CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const;
-	QueueFamilyIndices GetQueueFamilyIndices(VkPhysicalDevice device)const;
+	QueueFamilyIndices GetQueueFamilyIndices(VkPhysicalDevice device) const;
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,	void* pUserData);
+	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 };
 

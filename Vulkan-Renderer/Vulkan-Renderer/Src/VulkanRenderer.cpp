@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
+#include "ConstantsAndDefines.h"
 
 bool VulkanRenderer::Init(GLFWwindow* window)
 {
@@ -11,6 +12,7 @@ bool VulkanRenderer::Init(GLFWwindow* window)
 	{
 		CreateInstance();
 		CreateValidationDebugMessenger();
+		CreateSurface();
 		GetPhysicalDevice();
 		CreateLogicalDevice();
 	}
@@ -26,6 +28,7 @@ bool VulkanRenderer::Init(GLFWwindow* window)
 void VulkanRenderer::CleanUp()
 {
 	DestroyValidationDebugMessenger();
+	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyDevice(deviceHandle.logicalDevice, nullptr);
 	vkDestroyInstance(instance, nullptr);
 }
@@ -38,7 +41,7 @@ void VulkanRenderer::CreateInstance()
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.pEngineName = "NIL";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.apiVersion = VK_API_VERSION_1_0;
+	appInfo.apiVersion = VK_API_VERSION_1_2;
 
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -151,19 +154,28 @@ void VulkanRenderer::CreateLogicalDevice()
 {
 	QueueFamilyIndices indices = GetQueueFamilyIndices(deviceHandle.physicalDevice);
 
-	VkDeviceQueueCreateInfo queueCreateInfo = {};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
-	queueCreateInfo.queueCount = 1;
-	float priority = 1.0f;
-	queueCreateInfo.pQueuePriorities = &priority;
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	std::set<int> queueFamilyIndices = { indices.graphicsFamily, indices.presentationFamily };
+
+	for (int queueFamilyIndex : queueFamilyIndices)
+	{
+		VkDeviceQueueCreateInfo queueCreateInfo = {};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
+		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+		queueCreateInfo.queueCount = 1;
+		float priority = 1.0f;
+		queueCreateInfo.pQueuePriorities = &priority;
+
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
 
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.queueCreateInfoCount = 1;
-	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
-	deviceCreateInfo.enabledExtensionCount = 0;
-	deviceCreateInfo.ppEnabledExtensionNames = nullptr;
+	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(DEVICE_EXTENSIONS.size());
+	deviceCreateInfo.ppEnabledExtensionNames = DEVICE_EXTENSIONS.data();
 
 	VkPhysicalDeviceFeatures deviceFeatures = {};
 	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
@@ -175,9 +187,18 @@ void VulkanRenderer::CreateLogicalDevice()
 	}
 
 	vkGetDeviceQueue(deviceHandle.logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
+	vkGetDeviceQueue(deviceHandle.logicalDevice, indices.presentationFamily, 0, &presentationQueue);
 }
 
-bool VulkanRenderer::CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions)
+void VulkanRenderer::CreateSurface()
+{
+	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create window surface");
+	}
+}
+
+bool VulkanRenderer::CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const
 {
 	uint32_t extensionCount = 0;
 	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -208,10 +229,41 @@ bool VulkanRenderer::CheckInstanceExtensionSupport(std::vector<const char*>* che
 	return true;
 }
 
+bool VulkanRenderer::CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const
+{
+	uint32_t extensionCount = 0;
+	vkEnumerateDeviceExtensionProperties(physDevice, nullptr, &extensionCount, nullptr);
+
+	if (extensionCount == 0)
+	{
+		return false;
+	}
+
+	std::vector<VkExtensionProperties> extensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(physDevice, nullptr, &extensionCount, extensions.data());
+
+	for (const auto& deviceExtension : DEVICE_EXTENSIONS)
+	{
+		auto found = std::find_if(extensions.begin(), extensions.end(), [&](const VkExtensionProperties& val)
+			{
+				return strcmp(deviceExtension, val.extensionName);
+			});
+
+		if (found == std::end(extensions))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool VulkanRenderer::CheckDeviceSuitable(VkPhysicalDevice device) const
 {
 	QueueFamilyIndices indices = GetQueueFamilyIndices(device);
-	return indices.IsValid();
+	bool extensionsSupported = CheckDeviceExtensionSupport(device);
+
+	return indices.IsValid() && extensionsSupported;
 }
 
 bool VulkanRenderer::CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const
@@ -257,6 +309,14 @@ Utilities::QueueFamilyIndices VulkanRenderer::GetQueueFamilyIndices(VkPhysicalDe
 			indices.graphicsFamily = static_cast<int>(index);
 		}
 
+		VkBool32 presentationSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentationSupport);
+
+		if (familyProps[index].queueCount > 0 && presentationSupport)
+		{
+			indices.presentationFamily = index;
+		}
+
 		if (indices.IsValid())
 		{
 			break;
@@ -268,13 +328,12 @@ Utilities::QueueFamilyIndices VulkanRenderer::GetQueueFamilyIndices(VkPhysicalDe
 
 VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-	std::cerr << "\nValidation layer ";
 	switch (messageSeverity)
 	{
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:std::cerr << " [Verbose]:"; break;
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:std::cerr << " [Info]:"; break;
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:std::cerr << " [Warning]:"; break;
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:	std::cerr << " [Error]:"; break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:/*std::cerr << " [Verbose]:"; break*/ return VK_FALSE;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:std::cerr << "Validation [Info]:"; break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:std::cerr << "Validation [Warning]:"; break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:	std::cerr << "Validation [Error]:"; break;
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:break;
 	}
 
