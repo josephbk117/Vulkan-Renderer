@@ -76,9 +76,6 @@
     <None Include="Res\Shaders\simple_shader.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Res\CompileShaderswGLSLC.bat">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="Res\CompiledShaders\simple_shader.vert.spv">
       <Filter>Misc</Filter>
     </None>
@@ -86,6 +83,9 @@
       <Filter>Misc</Filter>
     </None>
     <None Include="Res\glslc.exe">
+      <Filter>Misc</Filter>
+    </None>
+    <None Include="Res\CompileShaderswGLSLC.bat">
       <Filter>Misc</Filter>
     </None>
   </ItemGroup>
