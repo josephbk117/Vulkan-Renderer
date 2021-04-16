@@ -27,6 +27,9 @@ private:
 	VkQueue graphicsQueue;
 	VkQueue presentationQueue;
 	VkSurfaceKHR surface;
+	VkSwapchainKHR swapChain;
+	VkFormat swapChainImageFormat;
+	VkExtent2D swapChainExtent;
 	VkDebugUtilsMessengerEXT debugMessenger;
 
 	void CreateInstance();
@@ -35,11 +38,16 @@ private:
 	void GetPhysicalDevice()const;
 	void CreateLogicalDevice();
 	void CreateSurface();
+	void CreateSwapChain();
 	bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
 	bool CheckDeviceSuitable(VkPhysicalDevice device) const;
 	bool CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const;
 	QueueFamilyIndices GetQueueFamilyIndices(VkPhysicalDevice device) const;
+	SwapChainInfo GetSwapChainDetails(VkPhysicalDevice device)const;
+	VkSurfaceFormatKHR GetSuitableSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& surfaceFormats) const;
+	VkPresentModeKHR GetSuitablePresentationMode(const std::vector<VkPresentModeKHR>& presentationMode) const;
+	VkExtent2D GetSuitableSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const;
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 };
