@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include "vulkan/vulkan_core.h"
 
 namespace Utilities
 {
@@ -14,6 +15,13 @@ namespace Utilities
 		{
 			return graphicsFamily >= 0 && presentationFamily >= 0;
 		}
+	};
+
+	struct SwapChainInfo
+	{
+		VkSurfaceCapabilitiesKHR surfaceCapabilities;
+		std::vector<VkSurfaceFormatKHR> surfaceFormats;
+		std::vector<VkPresentModeKHR> presentationModes;
 	};
 
 	class Utils
