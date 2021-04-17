@@ -2,17 +2,32 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include "vulkan/vulkan_core.h"
 
 namespace Utilities
 {
 	struct QueueFamilyIndices
 	{
 		int graphicsFamily = -1;
+		int presentationFamily = -1;
 
 		bool IsValid()
 		{
-			return graphicsFamily >= 0;
+			return graphicsFamily >= 0 && presentationFamily >= 0;
 		}
+	};
+
+	struct SwapChainInfo
+	{
+		VkSurfaceCapabilitiesKHR surfaceCapabilities;
+		std::vector<VkSurfaceFormatKHR> surfaceFormats;
+		std::vector<VkPresentModeKHR> presentationModes;
+	};
+
+	struct SwapChainImage
+	{
+		VkImage image;
+		VkImageView imageView;
 	};
 
 	class Utils
