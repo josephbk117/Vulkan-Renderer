@@ -6,51 +6,54 @@
 #include "Utils.h"
 
 using namespace Utilities;
-
-class VulkanRenderer
+namespace Renderer
 {
-public:
-	bool Init(GLFWwindow* window);
-	void CleanUp();
-
-private:
-
-	struct DeviceHandle
+	class VulkanRenderer
 	{
-		VkPhysicalDevice physicalDevice;
-		VkDevice logicalDevice;
-	}
-	mutable deviceHandle;
+	public:
+		bool Init(GLFWwindow* window);
+		void CleanUp();
 
-	GLFWwindow* window = nullptr;
-	VkInstance instance;
-	VkQueue graphicsQueue;
-	VkQueue presentationQueue;
-	VkSurfaceKHR surface;
-	VkSwapchainKHR swapChain;
-	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
-	std::vector<SwapChainImage> swapChainImages;
-	VkDebugUtilsMessengerEXT debugMessenger;
+	private:
 
-	void CreateInstance();
-	void CreateValidationDebugMessenger();
-	void DestroyValidationDebugMessenger();
-	void GetPhysicalDevice()const;
-	void CreateLogicalDevice();
-	void CreateSurface();
-	void CreateSwapChain();
-	bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
-	bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
-	bool CheckDeviceSuitable(VkPhysicalDevice device) const;
-	bool CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const;
-	QueueFamilyIndices GetQueueFamilyIndices(VkPhysicalDevice device) const;
-	SwapChainInfo GetSwapChainDetails(VkPhysicalDevice device)const;
-	VkSurfaceFormatKHR GetSuitableSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& surfaceFormats) const;
-	VkPresentModeKHR GetSuitablePresentationMode(const std::vector<VkPresentModeKHR>& presentationMode) const;
-	VkExtent2D GetSuitableSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const;
-	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+		struct DeviceHandle
+		{
+			VkPhysicalDevice physicalDevice;
+			VkDevice logicalDevice;
+		}
+		mutable deviceHandle;
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
-};
+		GLFWwindow* window = nullptr;
+		VkInstance instance;
+		VkQueue graphicsQueue;
+		VkQueue presentationQueue;
+		VkSurfaceKHR surface;
+		VkSwapchainKHR swapChain;
+		VkFormat swapChainImageFormat;
+		VkExtent2D swapChainExtent;
+		std::vector<SwapChainImage> swapChainImages;
+		VkDebugUtilsMessengerEXT debugMessenger;
 
+		void CreateInstance();
+		void CreateValidationDebugMessenger();
+		void DestroyValidationDebugMessenger();
+		void GetPhysicalDevice()const;
+		void CreateLogicalDevice();
+		void CreateSurface();
+		void CreateSwapChain();
+		void CreateRenderPipeline();
+		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
+		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
+		bool CheckDeviceSuitable(VkPhysicalDevice device) const;
+		bool CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const;
+		QueueFamilyIndices GetQueueFamilyIndices(VkPhysicalDevice device) const;
+		SwapChainInfo GetSwapChainDetails(VkPhysicalDevice device)const;
+		VkSurfaceFormatKHR GetSuitableSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& surfaceFormats) const;
+		VkPresentModeKHR GetSuitablePresentationMode(const std::vector<VkPresentModeKHR>& presentationMode) const;
+		VkExtent2D GetSuitableSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const;
+		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+		VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
+		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
+	};
+}
