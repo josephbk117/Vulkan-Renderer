@@ -8,6 +8,8 @@
 using namespace Utilities;
 namespace Renderer
 {
+	class RenderPipeline;
+
 	class VulkanRenderer
 	{
 	public:
@@ -31,6 +33,7 @@ namespace Renderer
 		VkSwapchainKHR swapChain;
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChainExtent;
+		RenderPipeline* renderPipelinePtr = nullptr;
 		std::vector<SwapChainImage> swapChainImages;
 		VkDebugUtilsMessengerEXT debugMessenger;
 

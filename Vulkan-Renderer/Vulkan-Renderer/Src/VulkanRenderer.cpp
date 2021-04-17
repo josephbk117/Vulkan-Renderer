@@ -5,6 +5,7 @@
 #include <string>
 #include "ConstantsAndDefines.h"
 #include "Utils.h"
+#include "RenderPipeline.h"
 
 namespace Renderer
 {
@@ -20,6 +21,7 @@ namespace Renderer
 			GetPhysicalDevice();
 			CreateLogicalDevice();
 			CreateSwapChain();
+			CreateRenderPipeline();
 		}
 		catch (const std::runtime_error& e)
 		{
@@ -37,10 +39,16 @@ namespace Renderer
 			vkDestroyImageView(deviceHandle.logicalDevice, image.imageView, nullptr);
 		}
 
-		DestroyValidationDebugMessenger();
+		if (renderPipelinePtr != nullptr)
+		{
+			delete renderPipelinePtr;
+			renderPipelinePtr = nullptr;
+		}
+
 		vkDestroySwapchainKHR(deviceHandle.logicalDevice, swapChain, nullptr);
 		vkDestroySurfaceKHR(instance, surface, nullptr);
 		vkDestroyDevice(deviceHandle.logicalDevice, nullptr);
+		DestroyValidationDebugMessenger();
 		vkDestroyInstance(instance, nullptr);
 	}
 
@@ -187,6 +195,7 @@ namespace Renderer
 		deviceCreateInfo.ppEnabledExtensionNames = DEVICE_EXTENSIONS.data();
 
 		VkPhysicalDeviceFeatures deviceFeatures = {};
+		deviceFeatures.depthClamp = VK_TRUE;
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
 		VkResult vkResult = vkCreateDevice(deviceHandle.physicalDevice, &deviceCreateInfo, nullptr, &deviceHandle.logicalDevice);
@@ -290,6 +299,15 @@ namespace Renderer
 
 		VkShaderModule vertexShaderModule = CreateShaderModule(vertCode);
 		VkShaderModule fragmentShaderModule = CreateShaderModule(fragCode);
+
+		renderPipelinePtr = new RenderPipeline();
+
+		RenderPipeline::RenderPipelineCreateInfo pipelineCreateInfo = {};
+		pipelineCreateInfo.vertexModule = vertexShaderModule;
+		pipelineCreateInfo.fragmentModule = fragmentShaderModule;
+		pipelineCreateInfo.extent = swapChainExtent;
+
+		renderPipelinePtr->Init(pipelineCreateInfo);
 
 		vkDestroyShaderModule(deviceHandle.logicalDevice, fragmentShaderModule, nullptr);
 		vkDestroyShaderModule(deviceHandle.logicalDevice, vertexShaderModule, nullptr);
@@ -560,9 +578,9 @@ namespace Renderer
 		switch (messageSeverity)
 		{
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:/*std::cerr << " [Verbose]:"; break*/ return VK_FALSE;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:std::cerr << "Validation [Info]:"; break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:std::cerr << "Validation [Warning]:"; break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:	std::cerr << "Validation [Error]:"; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:std::cerr << "\nValidation [Info]:"; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:std::cerr << "\nValidation [Warning]:"; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:	std::cerr << "\nValidation [Error]:"; break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:break;
 		}
 

@@ -15,6 +15,5 @@ public:
 private:
 	AppWindow appWindow;
 	VulkanRenderer renderer;
-	RenderPipeline renderPipeline{ "simple_shader.vert", "simple_shader.frag" };
 };
 
