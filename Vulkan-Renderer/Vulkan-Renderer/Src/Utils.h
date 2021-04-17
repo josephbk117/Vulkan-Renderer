@@ -19,7 +19,7 @@ namespace Utilities
 
 	struct SwapChainInfo
 	{
-		VkSurfaceCapabilitiesKHR surfaceCapabilities;
+		VkSurfaceCapabilitiesKHR surfaceCapabilities{};
 		std::vector<VkSurfaceFormatKHR> surfaceFormats;
 		std::vector<VkPresentModeKHR> presentationModes;
 	};
