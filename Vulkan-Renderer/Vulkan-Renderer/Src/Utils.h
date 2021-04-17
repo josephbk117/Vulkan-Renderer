@@ -24,6 +24,12 @@ namespace Utilities
 		std::vector<VkPresentModeKHR> presentationModes;
 	};
 
+	struct SwapChainImage
+	{
+		VkImage image;
+		VkImageView imageView;
+	};
+
 	class Utils
 	{
 	public:
