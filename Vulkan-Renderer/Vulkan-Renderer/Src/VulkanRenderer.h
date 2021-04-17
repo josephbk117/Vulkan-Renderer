@@ -33,6 +33,7 @@ namespace Renderer
 		VkSwapchainKHR swapChain;
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChainExtent;
+		VkRenderPass renderPass;
 		RenderPipeline* renderPipelinePtr = nullptr;
 		std::vector<SwapChainImage> swapChainImages;
 		VkDebugUtilsMessengerEXT debugMessenger;

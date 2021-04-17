@@ -12,6 +12,7 @@ namespace Renderer
 			VkShaderModule fragmentModule;
 			VkExtent2D extent;
 			VkDevice device;
+			VkRenderPass renderPass;
 		};
 
 		RenderPipeline() = default;
@@ -22,5 +23,6 @@ namespace Renderer
 
 		RenderPipelineCreateInfo pipelineCreateInfo;
 		VkPipelineLayout pipelineLayout;
+		VkPipeline gfxPipeline;
 	};
 }
