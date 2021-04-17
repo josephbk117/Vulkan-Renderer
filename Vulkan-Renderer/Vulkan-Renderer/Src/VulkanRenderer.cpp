@@ -21,6 +21,7 @@ namespace Renderer
 			GetPhysicalDevice();
 			CreateLogicalDevice();
 			CreateSwapChain();
+			CreateRenderPass();
 			CreateRenderPipeline();
 		}
 		catch (const std::runtime_error& e)
@@ -290,6 +291,11 @@ namespace Renderer
 		}
 	}
 
+	void VulkanRenderer::CreateRenderPass()
+	{
+
+	}
+
 	void VulkanRenderer::CreateRenderPipeline()
 	{
 		using namespace Utilities;
@@ -306,6 +312,7 @@ namespace Renderer
 		pipelineCreateInfo.vertexModule = vertexShaderModule;
 		pipelineCreateInfo.fragmentModule = fragmentShaderModule;
 		pipelineCreateInfo.extent = swapChainExtent;
+		pipelineCreateInfo.device = deviceHandle.logicalDevice;
 
 		renderPipelinePtr->Init(pipelineCreateInfo);
 

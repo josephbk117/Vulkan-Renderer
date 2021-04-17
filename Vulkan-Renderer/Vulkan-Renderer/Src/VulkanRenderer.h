@@ -44,6 +44,7 @@ namespace Renderer
 		void CreateLogicalDevice();
 		void CreateSurface();
 		void CreateSwapChain();
+		void CreateRenderPass();
 		void CreateRenderPipeline();
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
