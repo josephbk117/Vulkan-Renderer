@@ -133,3 +133,8 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	}
 
 }
+
+VkPipeline Renderer::RenderPipeline::GetPipeline() const
+{
+	return gfxPipeline;
+}

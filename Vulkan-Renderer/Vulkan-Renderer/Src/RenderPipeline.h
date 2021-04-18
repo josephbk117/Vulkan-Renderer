@@ -18,6 +18,7 @@ namespace Renderer
 		RenderPipeline() = default;
 		~RenderPipeline();
 		void Init(const RenderPipelineCreateInfo& pipelineCreateInfo);
+		VkPipeline GetPipeline() const;
 
 	private:
 

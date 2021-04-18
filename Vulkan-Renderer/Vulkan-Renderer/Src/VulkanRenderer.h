@@ -36,7 +36,11 @@ namespace Renderer
 		VkRenderPass renderPass;
 		RenderPipeline* renderPipelinePtr = nullptr;
 		std::vector<SwapChainImage> swapChainImages;
+		std::vector<VkFramebuffer> swapchainFrameBuffers;
+		std::vector<VkCommandBuffer> commandBuffers;
 		VkDebugUtilsMessengerEXT debugMessenger;
+
+		VkCommandPool gfxCommandPool;
 
 		void CreateInstance();
 		void CreateValidationDebugMessenger();
@@ -47,6 +51,10 @@ namespace Renderer
 		void CreateSwapChain();
 		void CreateRenderPass();
 		void CreateRenderPipeline();
+		void CreateFrameBuffers();
+		void CreateCommandPool();
+		void CreateCommandBuffers();
+		void RecordCommands();
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
 		bool CheckDeviceSuitable(VkPhysicalDevice device) const;
