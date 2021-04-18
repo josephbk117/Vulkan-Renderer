@@ -6,3 +6,5 @@
 
 const std::vector<const char*> DEVICE_EXTENSIONS = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 const std::vector<const char*> VALIDATION_LAYERS = { "VK_LAYER_KHRONOS_validation" };
+
+constexpr int MAX_FRAME_DRAWS = 2;

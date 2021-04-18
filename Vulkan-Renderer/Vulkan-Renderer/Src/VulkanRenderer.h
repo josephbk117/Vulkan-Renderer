@@ -14,6 +14,7 @@ namespace Renderer
 	{
 	public:
 		bool Init(GLFWwindow* window);
+		void Draw();
 		void CleanUp();
 
 	private:
@@ -26,6 +27,8 @@ namespace Renderer
 		mutable deviceHandle;
 
 		GLFWwindow* window = nullptr;
+		int currentFrame = 0;
+
 		VkInstance instance;
 		VkQueue graphicsQueue;
 		VkQueue presentationQueue;
@@ -35,12 +38,16 @@ namespace Renderer
 		VkExtent2D swapChainExtent;
 		VkRenderPass renderPass;
 		RenderPipeline* renderPipelinePtr = nullptr;
+
 		std::vector<SwapChainImage> swapChainImages;
 		std::vector<VkFramebuffer> swapchainFrameBuffers;
 		std::vector<VkCommandBuffer> commandBuffers;
-		VkDebugUtilsMessengerEXT debugMessenger;
 
+		VkDebugUtilsMessengerEXT debugMessenger;
 		VkCommandPool gfxCommandPool;
+		std::vector<VkSemaphore> imageAvailable;
+		std::vector<VkSemaphore> renderFinished;
+		std::vector<VkFence> drawFences;
 
 		void CreateInstance();
 		void CreateValidationDebugMessenger();
@@ -54,6 +61,7 @@ namespace Renderer
 		void CreateFrameBuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
+		void CreateSynchronization();
 		void RecordCommands();
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
