@@ -8,10 +8,13 @@
 using namespace Utilities;
 namespace Renderer
 {
+	class RenderPipeline;
+
 	class VulkanRenderer
 	{
 	public:
 		bool Init(GLFWwindow* window);
+		void Draw();
 		void CleanUp();
 
 	private:
@@ -24,6 +27,8 @@ namespace Renderer
 		mutable deviceHandle;
 
 		GLFWwindow* window = nullptr;
+		int currentFrame = 0;
+
 		VkInstance instance;
 		VkQueue graphicsQueue;
 		VkQueue presentationQueue;
@@ -31,8 +36,18 @@ namespace Renderer
 		VkSwapchainKHR swapChain;
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChainExtent;
+		VkRenderPass renderPass;
+		RenderPipeline* renderPipelinePtr = nullptr;
+
 		std::vector<SwapChainImage> swapChainImages;
+		std::vector<VkFramebuffer> swapchainFrameBuffers;
+		std::vector<VkCommandBuffer> commandBuffers;
+
 		VkDebugUtilsMessengerEXT debugMessenger;
+		VkCommandPool gfxCommandPool;
+		std::vector<VkSemaphore> imageAvailable;
+		std::vector<VkSemaphore> renderFinished;
+		std::vector<VkFence> drawFences;
 
 		void CreateInstance();
 		void CreateValidationDebugMessenger();
@@ -41,7 +56,13 @@ namespace Renderer
 		void CreateLogicalDevice();
 		void CreateSurface();
 		void CreateSwapChain();
+		void CreateRenderPass();
 		void CreateRenderPipeline();
+		void CreateFrameBuffers();
+		void CreateCommandPool();
+		void CreateCommandBuffers();
+		void CreateSynchronization();
+		void RecordCommands();
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
 		bool CheckDeviceSuitable(VkPhysicalDevice device) const;

@@ -13,6 +13,7 @@ void Application::Run()
 	while (!appWindow.ShouldClose())
 	{
 		appWindow.PollInputs();
+		renderer.Draw();
 	}
 
 	renderer.CleanUp();

@@ -1,12 +1,29 @@
 #pragma once
+#include "VulkanRenderer.h"
 #include <string>
 namespace Renderer
 {
 	class RenderPipeline
 	{
 	public:
-		RenderPipeline(const std::string& vertShaderPath, const std::string& fragShaderPath);
+		struct RenderPipelineCreateInfo
+		{
+			VkShaderModule vertexModule;
+			VkShaderModule fragmentModule;
+			VkExtent2D extent;
+			VkDevice device;
+			VkRenderPass renderPass;
+		};
+
+		RenderPipeline() = default;
+		~RenderPipeline();
+		void Init(const RenderPipelineCreateInfo& pipelineCreateInfo);
+		VkPipeline GetPipeline() const;
+
 	private:
-		void CreateGraphicsPipeline(const std::string& vertShaderPath, const std::string& fragShaderPath);
+
+		RenderPipelineCreateInfo pipelineCreateInfo;
+		VkPipelineLayout pipelineLayout;
+		VkPipeline gfxPipeline;
 	};
 }
