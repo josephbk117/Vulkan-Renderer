@@ -37,6 +37,27 @@ namespace Utilities
 		glm::vec3 col;
 	};
 
+	struct CreateBufferInfo
+	{
+		VkPhysicalDevice physicalDevice;
+		VkDevice device;
+		VkDeviceSize bufferSize;
+		VkBufferUsageFlags bufferUsageFlags;
+		VkMemoryPropertyFlags memoryPropFlags;
+		VkBuffer* buffer;
+		VkDeviceMemory* bufferMemory;
+	};
+
+	struct CopyBufferInfo
+	{
+		VkDevice device;
+		VkQueue transferQueue;
+		VkCommandPool transCommandPool;
+		VkBuffer srcBuffer;
+		VkBuffer dstBuffer;
+		VkDeviceSize bufferSize;
+	};
+
 	class Utils
 	{
 	public:
@@ -74,5 +95,77 @@ namespace Utilities
 
 			return NULL;
 		}
+
+		static void CreateBuffer(const CreateBufferInfo& bufferInfo)
+		{
+			VkBufferCreateInfo createInfo = {};
+			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			createInfo.size = bufferInfo.bufferSize;
+			createInfo.usage = bufferInfo.bufferUsageFlags;
+			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			VkResult vkResult = vkCreateBuffer(bufferInfo.device, &createInfo, nullptr, bufferInfo.buffer);
+
+			if (vkResult != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to create vertex buffer");
+			}
+
+			VkMemoryRequirements memRequirements = {};
+			vkGetBufferMemoryRequirements(bufferInfo.device, *bufferInfo.buffer, &memRequirements);
+
+			VkMemoryAllocateInfo memAllocInfo = {};
+			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			memAllocInfo.allocationSize = memRequirements.size;
+			memAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(bufferInfo.physicalDevice, memRequirements.memoryTypeBits,
+				bufferInfo.memoryPropFlags);
+
+			vkResult = vkAllocateMemory(bufferInfo.device, &memAllocInfo, nullptr, bufferInfo.bufferMemory);
+			if (vkResult != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to allocate vertex buffer memory");
+			}
+
+			vkBindBufferMemory(bufferInfo.device, *bufferInfo.buffer, *bufferInfo.bufferMemory, 0);
+		}
+
+		static void CopyBuffer(const CopyBufferInfo& copyBufferInfo)
+		{
+			VkCommandBuffer transferCommandBuffer;
+
+			VkCommandBufferAllocateInfo allocateInfo = {};
+			allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			allocateInfo.commandPool = copyBufferInfo.transCommandPool;
+			allocateInfo.commandBufferCount = 1;
+
+			vkAllocateCommandBuffers(copyBufferInfo.device, &allocateInfo, &transferCommandBuffer);
+
+			VkCommandBufferBeginInfo beginInfo = {};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+			vkBeginCommandBuffer(transferCommandBuffer, &beginInfo);
+
+			VkBufferCopy bufferCopyRegion = {};
+			bufferCopyRegion.srcOffset = 0;
+			bufferCopyRegion.dstOffset = 0;
+			bufferCopyRegion.size = copyBufferInfo.bufferSize;
+
+			vkCmdCopyBuffer(transferCommandBuffer, copyBufferInfo.srcBuffer, copyBufferInfo.dstBuffer, 1, &bufferCopyRegion);
+
+			vkEndCommandBuffer(transferCommandBuffer);
+
+			VkSubmitInfo submitInfo = {};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &transferCommandBuffer;
+
+			vkQueueSubmit(copyBufferInfo.transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+			vkQueueWaitIdle(copyBufferInfo.transferQueue);
+
+			vkFreeCommandBuffers(copyBufferInfo.device, copyBufferInfo.transCommandPool, 1, &transferCommandBuffer);
+		}
 	};
+
 }

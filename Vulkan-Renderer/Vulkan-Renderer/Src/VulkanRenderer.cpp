@@ -21,17 +21,22 @@ namespace Renderer
 			CreateSurface();
 			GetPhysicalDevice();
 			CreateLogicalDevice();
-
-			//Create meshes
-			std::vector<Vertex> meshVertices = { {{0.0f, -0.8f, 0.0}, {1.0, 0.0, 0.0}}, {{0.4, 0.4, 0.0}, {0,1,0}}, {{-0.4, 0.4, 0.0}, {0,0,1}} };
-			firstMesh = Mesh(deviceHandle.physicalDevice, deviceHandle.logicalDevice, &meshVertices);
-
 			CreateSwapChain();
 			CreateRenderPass();
 			CreateRenderPipeline();
 			CreateFrameBuffers();
 			CreateCommandPool();
 			CreateCommandBuffers();
+
+			//Create meshes
+			std::vector<Vertex> meshVertices =
+			{ {{0.0f, -0.8f, 0.0}, {1.0, 0.0, 0.0}},
+			  {{0.4, 0.4, 0.0}, {0,1,0}},
+			  {{-0.4, 0.4, 0.0}, {0,0,1}} };
+
+			std::vector<uint32_t> meshIndices = { 0, 1, 2 };
+			firstMesh = Mesh(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices);
+
 			CreateSynchronization();
 			RecordCommands();
 		}
@@ -92,7 +97,7 @@ namespace Renderer
 	{
 		vkDeviceWaitIdle(deviceHandle.logicalDevice);
 
-		firstMesh.DestroyVertexBuffer();
+		firstMesh.DestroyBuffers();
 
 		for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
 		{
@@ -568,8 +573,9 @@ namespace Renderer
 			VkBuffer vertexBuffers[] = { firstMesh.GetVertexBuffer() };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+			vkCmdBindIndexBuffer(commandBuffers[i], firstMesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(firstMesh.GetVertexCount()), 1, 0, 0);
+			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(firstMesh.GetIndexCount()), 1, 0, 0, 0);
 
 			vkCmdEndRenderPass(commandBuffers[i]);
 
