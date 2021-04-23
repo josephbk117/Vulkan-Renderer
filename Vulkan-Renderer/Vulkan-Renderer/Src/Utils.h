@@ -71,6 +71,8 @@ namespace Utilities
 					return i;
 				}
 			}
+
+			return NULL;
 		}
 	};
 }

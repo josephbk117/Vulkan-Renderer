@@ -700,7 +700,7 @@ namespace Renderer
 			}
 
 			VkBool32 presentationSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &presentationSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, static_cast<uint32_t>(index), surface, &presentationSupport);
 
 			if (familyProps[index].queueCount > 0 && presentationSupport)
 			{
