@@ -2,6 +2,7 @@
 #include "Utils.h"
 #include <iostream>
 #include "ConstantsAndDefines.h"
+#include <array>
 
 Renderer::RenderPipeline::~RenderPipeline()
 {
@@ -27,13 +28,33 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderCreateInfo, fragmentShaderCreateInfo };
 
+	VkVertexInputBindingDescription vertexBindingDesc = {};
+	vertexBindingDesc.binding = 0;
+	vertexBindingDesc.stride = sizeof(Utilities::Vertex);
+	/*
+	* VK_VERTEX_INPUT_RATE_VERTEX :If instance enabled the draw one instance at a time instead of one vertex for each mesh at the same time
+	* VK_VERTEX_INPUT_RATE_INSTANCE : Other way around
+	* */
+	vertexBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	std::array<VkVertexInputAttributeDescription, 2> vertAttributeDescs;
+	vertAttributeDescs[0].binding = 0;
+	vertAttributeDescs[0].location = 0;
+	vertAttributeDescs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+	vertAttributeDescs[0].offset = offsetof(Vertex, pos);
+
+	vertAttributeDescs[1].binding = 0;
+	vertAttributeDescs[1].location = 1;
+	vertAttributeDescs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+	vertAttributeDescs[1].offset = offsetof(Vertex, col);
+
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
 
 	vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
+	vertexInputCreateInfo.pVertexBindingDescriptions = &vertexBindingDesc;
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertAttributeDescs.size());
+	vertexInputCreateInfo.pVertexAttributeDescriptions = vertAttributeDescs.data();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

@@ -21,6 +21,11 @@ namespace Renderer
 			CreateSurface();
 			GetPhysicalDevice();
 			CreateLogicalDevice();
+
+			//Create meshes
+			std::vector<Vertex> meshVertices = { {{0.0f, -0.8f, 0.0}, {1.0, 0.0, 0.0}}, {{0.4, 0.4, 0.0}, {0,1,0}}, {{-0.4, 0.4, 0.0}, {0,0,1}} };
+			firstMesh = Mesh(deviceHandle.physicalDevice, deviceHandle.logicalDevice, &meshVertices);
+
 			CreateSwapChain();
 			CreateRenderPass();
 			CreateRenderPipeline();
@@ -86,6 +91,8 @@ namespace Renderer
 	void VulkanRenderer::CleanUp()
 	{
 		vkDeviceWaitIdle(deviceHandle.logicalDevice);
+
+		firstMesh.DestroyVertexBuffer();
 
 		for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
 		{
@@ -558,7 +565,11 @@ namespace Renderer
 
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelinePtr->GetPipeline());
 
-			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+			VkBuffer vertexBuffers[] = { firstMesh.GetVertexBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+
+			vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(firstMesh.GetVertexCount()), 1, 0, 0);
 
 			vkCmdEndRenderPass(commandBuffers[i]);
 

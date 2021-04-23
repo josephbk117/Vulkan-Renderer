@@ -149,6 +149,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Mesh.cpp" />
     <ClCompile Include="Src\MemoryPool.cpp" />
     <ClCompile Include="Src\RenderPipeline.cpp" />
     <ClCompile Include="Src\Shader.cpp" />
@@ -158,6 +159,7 @@
     <ClCompile Include="Src\VulkanRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Mesh.h" />
     <ClInclude Include="Src\MemoryPool.h" />
     <ClInclude Include="Src\ConstantsAndDefines.h" />
     <ClInclude Include="Src\RenderPipeline.h" />

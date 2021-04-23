@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include "vulkan/vulkan_core.h"
+#include <GLM/glm.hpp>
 
 namespace Utilities
 {
@@ -30,6 +31,12 @@ namespace Utilities
 		VkImageView imageView;
 	};
 
+	struct Vertex
+	{
+		glm::vec3 pos;
+		glm::vec3 col;
+	};
+
 	class Utils
 	{
 	public:
@@ -50,6 +57,20 @@ namespace Utilities
 
 			file.close();
 			return buffer;
+		}
+
+		static uint32_t FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t allowedTypes, VkMemoryPropertyFlags memPropFlags)
+		{
+			VkPhysicalDeviceMemoryProperties memProps;
+			vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProps);
+
+			for (uint32_t i = 0; i < memProps.memoryTypeCount; i++)
+			{
+				if ((allowedTypes & (1 << i)) && (memProps.memoryTypes[i].propertyFlags & memPropFlags) == memPropFlags)
+				{
+					return i;
+				}
+			}
 		}
 	};
 }

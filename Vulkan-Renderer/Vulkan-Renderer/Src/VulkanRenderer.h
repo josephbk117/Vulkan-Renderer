@@ -4,6 +4,7 @@
 #include <vector>
 #include <set>
 #include "Utils.h"
+#include "Mesh.h"
 
 using namespace Utilities;
 namespace Renderer
@@ -28,6 +29,9 @@ namespace Renderer
 
 		GLFWwindow* window = nullptr;
 		int currentFrame = 0;
+
+		//Scene Objects
+		Mesh firstMesh;
 
 		VkInstance instance;
 		VkQueue graphicsQueue;
