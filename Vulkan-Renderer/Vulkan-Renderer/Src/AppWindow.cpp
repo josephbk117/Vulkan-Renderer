@@ -1,8 +1,13 @@
 #include "AppWindow.h"
 #include <stdexcept>
+#include "ConstantsAndDefines.h"
+#include "Utils.h"
 
 void ApplicationWindow::AppWindow::Initwindow(const WindowProperties& _windowProps)
 {
+	using namespace Utilities;
+	PROFILE_FUNCTION();
+
 	this->windowProps = _windowProps;
 
 	glfwInit();
@@ -19,16 +24,25 @@ ApplicationWindow::AppWindow::WindowProperties ApplicationWindow::AppWindow::Get
 
 bool ApplicationWindow::AppWindow::ShouldClose() const
 {
+	using namespace Utilities;
+	PROFILE_FUNCTION();
+
 	return glfwWindowShouldClose(windowPtr);
 }
 
 void ApplicationWindow::AppWindow::PollInputs() const
 {
+	using namespace Utilities;
+	PROFILE_FUNCTION();
+
 	glfwPollEvents();
 }
 
 void ApplicationWindow::AppWindow::CreateVulkanWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
 {
+	using namespace Utilities;
+	PROFILE_FUNCTION();
+
 	if (glfwCreateWindowSurface(instance, windowPtr, nullptr, surface) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create vulkan window surface");
@@ -42,6 +56,9 @@ GLFWwindow* ApplicationWindow::AppWindow::GetWindow() const
 
 ApplicationWindow::AppWindow::~AppWindow()
 {
+	using namespace Utilities;
+	PROFILE_FUNCTION();
+
 	glfwDestroyWindow(windowPtr);
 	glfwTerminate();
 }

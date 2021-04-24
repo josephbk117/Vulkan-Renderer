@@ -12,6 +12,8 @@ Renderer::RenderPipeline::~RenderPipeline()
 
 void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCreateInfo)
 {
+	PROFILE_FUNCTION();
+
 	this->pipelineCreateInfo = pipelineCreateInfo;
 
 	VkPipelineShaderStageCreateInfo vertexShaderCreateInfo = {};
