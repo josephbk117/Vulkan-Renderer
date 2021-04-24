@@ -102,6 +102,13 @@ namespace Utilities
 			std::string name = result.Name;
 			std::replace(name.begin(), name.end(), '"', '\'');
 
+			const std::string toEraseStr("__cdecl");
+			const size_t pos = name.find(toEraseStr);
+			if (pos != std::string::npos)
+			{
+				name.erase(pos, toEraseStr.length());
+			}
+
 			outputStream << "{";
 			outputStream << "\"cat\":\"function\",";
 			outputStream << "\"dur\":" << (result.End - result.Start) << ',';
