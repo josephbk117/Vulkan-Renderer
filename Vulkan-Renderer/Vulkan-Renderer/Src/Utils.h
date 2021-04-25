@@ -1,9 +1,12 @@
 #pragma once
+#define GLFW_INCLUDE_VULKAN
 #include <vector>
 #include <string>
 #include <fstream>
-#include "vulkan/vulkan_core.h"
 #include <GLM/glm.hpp>
+#include <chrono>
+#include <thread>
+#include <algorithm>
 
 namespace Utilities
 {
@@ -56,6 +59,126 @@ namespace Utilities
 		VkBuffer srcBuffer;
 		VkBuffer dstBuffer;
 		VkDeviceSize bufferSize;
+	};
+
+	struct ProfileResult
+	{
+		std::string Name;
+		long long Start, End;
+		size_t ThreadID;
+	};
+
+	struct BenchmarkSession
+	{
+		std::string Name;
+	};
+
+	struct Benchmark
+	{
+	public:
+		Benchmark() : currentSession(nullptr), profileCount(0) {}
+
+		void BeginSession(const std::string& name, const std::string& filepath = "results.json")
+		{
+			outputStream.open(filepath);
+			WriteHeader();
+			currentSession = new BenchmarkSession{ name };
+		}
+
+		void EndSession()
+		{
+			WriteFooter();
+			outputStream.close();
+			delete currentSession;
+			currentSession = nullptr;
+			profileCount = 0;
+		}
+
+		void WriteProfile(const ProfileResult& result)
+		{
+			if (profileCount++ > 0)
+				outputStream << ",";
+
+			std::string name = result.Name;
+			std::replace(name.begin(), name.end(), '"', '\'');
+
+			const std::string toEraseStr("__cdecl");
+			const size_t pos = name.find(toEraseStr);
+			if (pos != std::string::npos)
+			{
+				name.erase(pos, toEraseStr.length());
+			}
+
+			outputStream << "{";
+			outputStream << "\"cat\":\"function\",";
+			outputStream << "\"dur\":" << (result.End - result.Start) << ',';
+			outputStream << "\"name\":\"" << name << "\",";
+			outputStream << "\"ph\":\"X\",";
+			outputStream << "\"pid\":0,";
+			outputStream << "\"tid\":" << result.ThreadID << ",";
+			outputStream << "\"ts\":" << result.Start;
+			outputStream << "}";
+
+			outputStream.flush();
+		}
+
+		void WriteHeader()
+		{
+			outputStream << "{\"otherData\": {},\"traceEvents\":[";
+			outputStream.flush();
+		}
+
+		void WriteFooter()
+		{
+			outputStream << "]}";
+			outputStream.flush();
+		}
+
+		static Benchmark& Get()
+		{
+			static Benchmark instance;
+			return instance;
+		}
+
+	private:
+		BenchmarkSession* currentSession;
+		std::ofstream outputStream;
+		int profileCount;
+	};
+
+	struct BenchmarkTimer
+	{
+	public:
+		BenchmarkTimer(const char* name) : name(name), stopped(false)
+		{
+			startTimepoint = std::chrono::high_resolution_clock::now();
+		}
+
+		~BenchmarkTimer()
+		{
+			if (!stopped)
+			{
+				Stop();
+			}
+		}
+
+		void Stop()
+		{
+			auto endTimepoint = std::chrono::high_resolution_clock::now();
+
+			long long start = std::chrono::time_point_cast<std::chrono::microseconds>(startTimepoint).time_since_epoch().count();
+			long long end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch().count();
+
+			size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
+			Benchmark::Get().WriteProfile({ name, start, end, threadID });
+
+			stopped = true;
+		}
+
+	private:
+		const char* name;
+		std::chrono::time_point<std::chrono::high_resolution_clock> startTimepoint;
+		bool stopped;
 	};
 
 	class Utils

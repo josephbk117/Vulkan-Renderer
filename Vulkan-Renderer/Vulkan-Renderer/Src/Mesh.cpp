@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "ConstantsAndDefines.h"
 
 Mesh::Mesh()
 {
@@ -7,6 +8,8 @@ Mesh::Mesh()
 
 Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices, std::vector<uint32_t>* indices)
 {
+	PROFILE_FUNCTION();
+
 	vertexCount = vertices->size();
 	indexCount = indices->size();
 	this->physicalDevice = physicalDevice;
@@ -37,6 +40,8 @@ VkBuffer Mesh::GetIndexBuffer() const
 
 void Mesh::DestroyBuffers()
 {
+	PROFILE_FUNCTION();
+
 	vkDestroyBuffer(device, vertexBuffer, nullptr);
 	vkFreeMemory(device, vertexBufferMemory, nullptr);
 
@@ -51,6 +56,8 @@ Mesh::~Mesh()
 
 void Mesh::CreateVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices)
 {
+	PROFILE_FUNCTION();
+
 	VkDeviceSize bufferSize = sizeof(Vertex) * vertices->size();
 
 	VkBuffer stagingBuffer;
@@ -99,6 +106,8 @@ void Mesh::CreateVertexBuffer(VkQueue transferQueue, VkCommandPool transferComma
 
 void Mesh::CreateIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<uint32_t>* indices)
 {
+	PROFILE_FUNCTION();
+
 	VkDeviceSize bufferSize = sizeof(uint32_t) * indices->size();
 
 	VkBuffer stagingBuffer;

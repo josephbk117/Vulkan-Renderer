@@ -12,6 +12,7 @@ namespace Renderer
 {
 	bool VulkanRenderer::Init(GLFWwindow* window)
 	{
+		PROFILE_FUNCTION();
 		this->window = window;
 
 		try
@@ -51,6 +52,8 @@ namespace Renderer
 
 	void VulkanRenderer::Draw()
 	{
+		PROFILE_FUNCTION();
+
 		vkWaitForFences(deviceHandle.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 		vkResetFences(deviceHandle.logicalDevice, 1, &drawFences[currentFrame]);
 
@@ -95,6 +98,7 @@ namespace Renderer
 
 	void VulkanRenderer::CleanUp()
 	{
+		PROFILE_FUNCTION();
 		vkDeviceWaitIdle(deviceHandle.logicalDevice);
 
 		firstMesh.DestroyBuffers();
@@ -135,6 +139,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateInstance()
 	{
+		PROFILE_FUNCTION();
+
 		VkApplicationInfo appInfo = {};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 		appInfo.pApplicationName = "Vulkan App";
@@ -189,6 +195,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateValidationDebugMessenger()
 	{
+		PROFILE_FUNCTION();
+
 		VkDebugUtilsMessengerCreateInfoEXT createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -210,6 +218,8 @@ namespace Renderer
 
 	void VulkanRenderer::DestroyValidationDebugMessenger()
 	{
+		PROFILE_FUNCTION();
+
 		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 		if (func != nullptr)
 		{
@@ -223,6 +233,8 @@ namespace Renderer
 
 	void VulkanRenderer::GetPhysicalDevice() const
 	{
+		PROFILE_FUNCTION();
+
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -250,6 +262,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateLogicalDevice()
 	{
+		PROFILE_FUNCTION();
+
 		QueueFamilyIndices indices = GetQueueFamilyIndices(deviceHandle.physicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -291,6 +305,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateSurface()
 	{
+		PROFILE_FUNCTION();
+
 		if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create window surface");
@@ -299,6 +315,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateSwapChain()
 	{
+		PROFILE_FUNCTION();
+
 		SwapChainInfo swapChainInfo = GetSwapChainDetails(deviceHandle.physicalDevice);
 
 		VkSurfaceFormatKHR surfaceFormat = GetSuitableSurfaceFormat(swapChainInfo.surfaceFormats);
@@ -373,6 +391,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateRenderPass()
 	{
+		PROFILE_FUNCTION();
+
 		VkAttachmentDescription colorAttachment = {};
 		colorAttachment.format = swapChainImageFormat;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -430,6 +450,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateRenderPipeline()
 	{
+		PROFILE_FUNCTION();
+
 		using namespace Utilities;
 
 		auto vertCode = Utils::ReadFile(COMPILED_SHADER_PATH + std::string("simple_shader.vert") + COMPILED_SHADER_SUFFIX);
@@ -455,6 +477,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateFrameBuffers()
 	{
+		PROFILE_FUNCTION();
+
 		swapchainFrameBuffers.resize(swapChainImages.size());
 
 		for (size_t i = 0; i < swapchainFrameBuffers.size(); i++)
@@ -481,6 +505,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateCommandPool()
 	{
+		PROFILE_FUNCTION();
+
 		VkCommandPoolCreateInfo poolInfo = {};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 
@@ -497,6 +523,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateCommandBuffers()
 	{
+		PROFILE_FUNCTION();
+
 		commandBuffers.resize(swapchainFrameBuffers.size());
 		VkCommandBufferAllocateInfo allocateInfo = {};
 
@@ -515,6 +543,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateSynchronization()
 	{
+		PROFILE_FUNCTION();
+
 		imageAvailable.resize(MAX_FRAME_DRAWS);
 		renderFinished.resize(MAX_FRAME_DRAWS);
 		drawFences.resize(MAX_FRAME_DRAWS);
@@ -541,6 +571,8 @@ namespace Renderer
 
 	void VulkanRenderer::RecordCommands()
 	{
+		PROFILE_FUNCTION();
+
 		VkCommandBufferBeginInfo beginInfo = {};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -589,6 +621,8 @@ namespace Renderer
 
 	bool VulkanRenderer::CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const
 	{
+		PROFILE_FUNCTION();
+
 		uint32_t extensionCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
@@ -620,6 +654,8 @@ namespace Renderer
 
 	bool VulkanRenderer::CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const
 	{
+		PROFILE_FUNCTION();
+
 		uint32_t extensionCount = 0;
 		vkEnumerateDeviceExtensionProperties(physDevice, nullptr, &extensionCount, nullptr);
 
@@ -649,6 +685,8 @@ namespace Renderer
 
 	bool VulkanRenderer::CheckDeviceSuitable(VkPhysicalDevice device) const
 	{
+		PROFILE_FUNCTION();
+
 		QueueFamilyIndices indices = GetQueueFamilyIndices(device);
 		bool extensionsSupported = CheckDeviceExtensionSupport(device);
 
@@ -664,6 +702,8 @@ namespace Renderer
 
 	bool VulkanRenderer::CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const
 	{
+		PROFILE_FUNCTION();
+
 		uint32_t layerCount = 0;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -690,6 +730,8 @@ namespace Renderer
 
 	Utilities::QueueFamilyIndices VulkanRenderer::GetQueueFamilyIndices(VkPhysicalDevice device) const
 	{
+		PROFILE_FUNCTION();
+
 		QueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount = 0;
@@ -724,6 +766,8 @@ namespace Renderer
 
 	Utilities::SwapChainInfo VulkanRenderer::GetSwapChainDetails(VkPhysicalDevice device) const
 	{
+		PROFILE_FUNCTION();
+
 		SwapChainInfo swapChainInfo;
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &swapChainInfo.surfaceCapabilities);
 
@@ -750,6 +794,8 @@ namespace Renderer
 
 	VkSurfaceFormatKHR VulkanRenderer::GetSuitableSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& surfaceFormats) const
 	{
+		PROFILE_FUNCTION();
+
 		if (surfaceFormats.size() == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED)
 		{
 			return { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
@@ -769,6 +815,8 @@ namespace Renderer
 
 	VkPresentModeKHR VulkanRenderer::GetSuitablePresentationMode(const std::vector<VkPresentModeKHR>& presentationMode) const
 	{
+		PROFILE_FUNCTION();
+
 		for (const auto& presentationMode : presentationMode)
 		{
 			if (presentationMode == VK_PRESENT_MODE_MAILBOX_KHR)
@@ -782,6 +830,8 @@ namespace Renderer
 
 	VkExtent2D VulkanRenderer::GetSuitableSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const
 	{
+		PROFILE_FUNCTION();
+
 		if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 		{
 			return surfaceCapabilities.currentExtent;
@@ -803,6 +853,8 @@ namespace Renderer
 
 	VkImageView VulkanRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 	{
+		PROFILE_FUNCTION();
+
 		VkImageViewCreateInfo viewCreateInfo = {};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewCreateInfo.image = image;
@@ -831,6 +883,8 @@ namespace Renderer
 
 	VkShaderModule VulkanRenderer::CreateShaderModule(const std::vector<char>& code)
 	{
+		PROFILE_FUNCTION();
+
 		VkShaderModuleCreateInfo shaderModuldeCreateInfo = {};
 		shaderModuldeCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		shaderModuldeCreateInfo.codeSize = code.size();
