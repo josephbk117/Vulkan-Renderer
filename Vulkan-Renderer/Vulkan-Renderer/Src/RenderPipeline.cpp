@@ -190,6 +190,8 @@ VkDescriptorSet& Renderer::RenderPipeline::GetDescriptorSet(uint32_t index)
 
 void Renderer::RenderPipeline::SetPerspectiveProjectionMatrix(float fov, float aspectRatio, float nearPlane, float farPlane)
 {
+	PROFILE_FUNCTION();
+
 	mvp.projection = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
 	mvp.projection[1][1] *= -1.0f;
 }
@@ -206,6 +208,8 @@ void Renderer::RenderPipeline::SetModelMatrix(const glm::mat4& mat)
 
 void Renderer::RenderPipeline::UpdateUniformBuffer(uint32_t imageIndex)
 {
+	PROFILE_FUNCTION();
+
 	void* data = nullptr;
 	vkMapMemory(pipelineCreateInfo.device.logicalDevice, uniformBufferMemory[imageIndex], 0, sizeof(MVP), 0, &data);
 	memcpy(data, &mvp, sizeof(MVP));

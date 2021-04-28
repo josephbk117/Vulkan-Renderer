@@ -56,6 +56,8 @@ namespace Renderer
 
 	void VulkanRenderer::Update()
 	{
+		PROFILE_FUNCTION();
+
 		static float angle = 0.0f;
 		static float lastTime = 0.0f;
 
