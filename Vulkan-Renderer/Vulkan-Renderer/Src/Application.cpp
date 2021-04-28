@@ -20,6 +20,7 @@ void Application::Run()
 		while (!appWindow.ShouldClose())
 		{
 			appWindow.PollInputs();
+			renderer.Update();
 			renderer.Draw();
 		}
 	}

@@ -6,8 +6,19 @@
 
 Renderer::RenderPipeline::~RenderPipeline()
 {
-	vkDestroyPipeline(pipelineCreateInfo.device, gfxPipeline, nullptr);
-	vkDestroyPipelineLayout(pipelineCreateInfo.device, pipelineLayout, nullptr);
+	PROFILE_FUNCTION();
+
+	vkDestroyDescriptorPool(pipelineCreateInfo.device.logicalDevice, descriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, descriptorSetLayout, nullptr);
+
+	for (size_t i = 0; i < uniformBuffer.size(); i++)
+	{
+		vkDestroyBuffer(pipelineCreateInfo.device.logicalDevice, uniformBuffer[i], nullptr);
+		vkFreeMemory(pipelineCreateInfo.device.logicalDevice, uniformBufferMemory[i], nullptr);
+	}
+
+	vkDestroyPipeline(pipelineCreateInfo.device.logicalDevice, gfxPipeline, nullptr);
+	vkDestroyPipelineLayout(pipelineCreateInfo.device.logicalDevice, pipelineLayout, nullptr);
 }
 
 void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCreateInfo)
@@ -15,6 +26,8 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	PROFILE_FUNCTION();
 
 	this->pipelineCreateInfo = pipelineCreateInfo;
+
+	CreateDescriptorSetLayout();
 
 	VkPipelineShaderStageCreateInfo vertexShaderCreateInfo = {};
 	vertexShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -89,7 +102,7 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	rasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_FILL; // Needed GPU feature for other values
 	rasterizerCreateInfo.lineWidth = 1.0f; // Needed GPU feature for other values
 	rasterizerCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizerCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizerCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizerCreateInfo.depthBiasEnable = VK_FALSE; // Shadow mapping would probably need it
 
 	VkPipelineMultisampleStateCreateInfo multiSampleCreateInfo = {};
@@ -117,12 +130,12 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutCreateInfo.setLayoutCount = 0;
-	pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+	pipelineLayoutCreateInfo.setLayoutCount = 1;
+	pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-	VkResult vkResult = vkCreatePipelineLayout(pipelineCreateInfo.device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+	VkResult vkResult = vkCreatePipelineLayout(pipelineCreateInfo.device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
 
 	if (vkResult != VK_SUCCESS)
 	{
@@ -148,16 +161,157 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	graphicsPipelineCreateInfo.basePipelineIndex = -1;
 
-	vkResult = vkCreateGraphicsPipelines(pipelineCreateInfo.device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &gfxPipeline);
+	vkResult = vkCreateGraphicsPipelines(pipelineCreateInfo.device.logicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &gfxPipeline);
 
 	if (vkResult != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create graphics pipeline");
 	}
 
+	CreateUniformBuffers();
+	CreateDescriptorPool();
+	CreateDescriptorSets();
 }
 
 VkPipeline Renderer::RenderPipeline::GetPipeline() const
 {
 	return gfxPipeline;
+}
+
+VkPipelineLayout Renderer::RenderPipeline::GetPipelineLayout() const
+{
+	return pipelineLayout;
+}
+
+VkDescriptorSet& Renderer::RenderPipeline::GetDescriptorSet(uint32_t index)
+{
+	return (descriptorSets[index]);
+}
+
+void Renderer::RenderPipeline::SetPerspectiveProjectionMatrix(float fov, float aspectRatio, float nearPlane, float farPlane)
+{
+	mvp.projection = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+	mvp.projection[1][1] *= -1.0f;
+}
+
+void Renderer::RenderPipeline::SetViewMatrixFromLookAt(const glm::vec3& location, const glm::vec3& lookAt, const glm::vec3& upVec)
+{
+	mvp.view = glm::lookAt(location, lookAt, upVec);
+}
+
+void Renderer::RenderPipeline::SetModelMatrix(const glm::mat4& mat)
+{
+	mvp.model = mat;
+}
+
+void Renderer::RenderPipeline::UpdateUniformBuffer(uint32_t imageIndex)
+{
+	void* data = nullptr;
+	vkMapMemory(pipelineCreateInfo.device.logicalDevice, uniformBufferMemory[imageIndex], 0, sizeof(MVP), 0, &data);
+	memcpy(data, &mvp, sizeof(MVP));
+	vkUnmapMemory(pipelineCreateInfo.device.logicalDevice, uniformBufferMemory[imageIndex]);
+}
+
+void Renderer::RenderPipeline::CreateDescriptorSetLayout()
+{
+	PROFILE_FUNCTION();
+	// MVP Binding Info
+
+	VkDescriptorSetLayoutBinding mvpLayoutBinding = {};
+	mvpLayoutBinding.binding = 0;
+	mvpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	mvpLayoutBinding.descriptorCount = 1;
+	mvpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	mvpLayoutBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
+	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutCreateInfo.bindingCount = 1;
+	layoutCreateInfo.pBindings = &mvpLayoutBinding;
+
+	VkResult vkResult = vkCreateDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, &layoutCreateInfo, nullptr, &descriptorSetLayout);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor set layout");
+	}
+}
+
+void Renderer::RenderPipeline::CreateUniformBuffers()
+{
+	PROFILE_FUNCTION();
+
+	VkDeviceSize bufferSize = sizeof(MVP);
+	uniformBuffer.resize(pipelineCreateInfo.swapchainImageCount);
+	uniformBufferMemory.resize(pipelineCreateInfo.swapchainImageCount);
+
+	for (size_t i = 0; i < pipelineCreateInfo.swapchainImageCount; i++)
+	{
+		Utils::CreateBuffer({ pipelineCreateInfo.device.physicalDevice,
+			pipelineCreateInfo.device.logicalDevice, bufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			&uniformBuffer[i], &uniformBufferMemory[i] });
+	}
+}
+
+void Renderer::RenderPipeline::CreateDescriptorPool()
+{
+	PROFILE_FUNCTION();
+
+	VkDescriptorPoolSize poolSize = {};
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = static_cast<uint32_t>(uniformBuffer.size());
+
+	VkDescriptorPoolCreateInfo poolCreateInfo = {};
+	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolCreateInfo.maxSets = static_cast<uint32_t>(uniformBuffer.size());
+	poolCreateInfo.poolSizeCount = 1;
+	poolCreateInfo.pPoolSizes = &poolSize;
+
+	VkResult vkResult = vkCreateDescriptorPool(pipelineCreateInfo.device.logicalDevice, &poolCreateInfo, nullptr, &descriptorPool);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor pool");
+	}
+}
+
+void Renderer::RenderPipeline::CreateDescriptorSets()
+{
+	PROFILE_FUNCTION();
+
+	descriptorSets.resize(uniformBuffer.size());
+	std::vector<VkDescriptorSetLayout> setLayouts(uniformBuffer.size(), descriptorSetLayout);
+
+	VkDescriptorSetAllocateInfo setAllocateInfo = {};
+
+	setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	setAllocateInfo.descriptorPool = descriptorPool;
+	setAllocateInfo.descriptorSetCount = static_cast<uint32_t>(uniformBuffer.size());
+	setAllocateInfo.pSetLayouts = setLayouts.data();
+
+	VkResult vkResult = vkAllocateDescriptorSets(pipelineCreateInfo.device.logicalDevice, &setAllocateInfo, descriptorSets.data());
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate descriptor set");
+	}
+
+	for (size_t i = 0; i < uniformBuffer.size(); i++)
+	{
+		VkDescriptorBufferInfo mvpBufferInfo = {};
+		mvpBufferInfo.buffer = uniformBuffer[i];
+		mvpBufferInfo.offset = 0;
+		mvpBufferInfo.range = sizeof(MVP);
+
+		VkWriteDescriptorSet mvpSetWrite = {};
+		mvpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		mvpSetWrite.dstSet = descriptorSets[i];
+		mvpSetWrite.dstBinding = 0;
+		mvpSetWrite.dstArrayElement = 0;
+		mvpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		mvpSetWrite.descriptorCount = 1;
+		mvpSetWrite.pBufferInfo = &mvpBufferInfo;
+
+		vkUpdateDescriptorSets(pipelineCreateInfo.device.logicalDevice, 1, &mvpSetWrite, 0, nullptr);
+	}
 }

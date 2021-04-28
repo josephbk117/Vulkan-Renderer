@@ -29,11 +29,15 @@ namespace Renderer
 			CreateCommandPool();
 			CreateCommandBuffers();
 
+			renderPipelinePtr->SetPerspectiveProjectionMatrix(glm::radians(60.0f), (float)swapChainExtent.width / swapChainExtent.height, 0.1f, 100.0f);
+			renderPipelinePtr->SetViewMatrixFromLookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f), GLOBAL_UP);
+			renderPipelinePtr->SetModelMatrix(glm::mat4(1.0f));
+
 			//Create meshes
 			std::vector<Vertex> meshVertices =
-			{ {{0.0f, -0.8f, 0.0}, {1.0, 0.0, 0.0}},
-			  {{0.4, 0.4, 0.0}, {0,1,0}},
-			  {{-0.4, 0.4, 0.0}, {0,0,1}} };
+			{ {{0.0f, -0.0f, 0.0}, {1.0, 0.0, 0.0}},
+			  {{0.25, 0.5, 0.0}, {0,1,0}},
+			  {{-0.25, 0.5, 0.0}, {0,0,1}} };
 
 			std::vector<uint32_t> meshIndices = { 0, 1, 2 };
 			firstMesh = Mesh(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices);
@@ -50,6 +54,23 @@ namespace Renderer
 		return EXIT_SUCCESS;
 	}
 
+	void VulkanRenderer::Update()
+	{
+		static float angle = 0.0f;
+		static float lastTime = 0.0f;
+
+		float deltaTime = 0.0f;
+
+		float now = glfwGetTime();
+		deltaTime = now - lastTime;
+
+		angle += 1000.0f * deltaTime;
+
+		renderPipelinePtr->SetModelMatrix(glm::rotate(glm::mat4(1.0f), glm::radians(angle), GLOBAL_FORWARD));
+
+		lastTime = now;
+	}
+
 	void VulkanRenderer::Draw()
 	{
 		PROFILE_FUNCTION();
@@ -59,6 +80,8 @@ namespace Renderer
 
 		uint32_t imageIndex = 0;
 		vkAcquireNextImageKHR(deviceHandle.logicalDevice, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+		renderPipelinePtr->UpdateUniformBuffer(imageIndex);
 
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -466,8 +489,9 @@ namespace Renderer
 		pipelineCreateInfo.vertexModule = vertexShaderModule;
 		pipelineCreateInfo.fragmentModule = fragmentShaderModule;
 		pipelineCreateInfo.extent = swapChainExtent;
-		pipelineCreateInfo.device = deviceHandle.logicalDevice;
+		pipelineCreateInfo.device = deviceHandle;
 		pipelineCreateInfo.renderPass = renderPass;
+		pipelineCreateInfo.swapchainImageCount = swapChainImages.size();
 
 		renderPipelinePtr->Init(pipelineCreateInfo);
 
@@ -606,6 +630,9 @@ namespace Renderer
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffers[i], firstMesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
+				renderPipelinePtr->GetPipelineLayout(), 0, 1, &renderPipelinePtr->GetDescriptorSet(i), 0, nullptr);
 
 			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(firstMesh.GetIndexCount()), 1, 0, 0, 0);
 

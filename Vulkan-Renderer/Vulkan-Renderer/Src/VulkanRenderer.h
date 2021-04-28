@@ -1,6 +1,7 @@
 #pragma once
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
+#include <GLM/gtc/matrix_transform.hpp>
 #include <vector>
 #include <set>
 #include "Utils.h"
@@ -15,17 +16,12 @@ namespace Renderer
 	{
 	public:
 		bool Init(GLFWwindow* window);
+		void Update();
 		void Draw();
 		void CleanUp();
 
 	private:
-
-		struct DeviceHandle
-		{
-			VkPhysicalDevice physicalDevice;
-			VkDevice logicalDevice;
-		}
-		mutable deviceHandle;
+		mutable DeviceHandle deviceHandle;
 
 		GLFWwindow* window = nullptr;
 		int currentFrame = 0;

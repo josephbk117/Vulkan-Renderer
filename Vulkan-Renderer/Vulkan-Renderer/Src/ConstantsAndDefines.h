@@ -10,3 +10,7 @@ const std::vector<const char*> DEVICE_EXTENSIONS = { VK_KHR_SWAPCHAIN_EXTENSION_
 const std::vector<const char*> VALIDATION_LAYERS = { "VK_LAYER_KHRONOS_validation" };
 
 constexpr int MAX_FRAME_DRAWS = 2;
+
+constexpr glm::vec3 GLOBAL_UP(0.0f, 1.0f, 0.0f);
+constexpr glm::vec3 GLOBAL_RIGHT(1.0f, 0.0f, 0.0f);
+constexpr glm::vec3 GLOBAL_FORWARD(0.0f, 0.0f, 1.0f);
