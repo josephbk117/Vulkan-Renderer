@@ -8,13 +8,18 @@ Renderer::RenderPipeline::~RenderPipeline()
 {
 	PROFILE_FUNCTION();
 
+	_aligned_free(modelTransferSpace);
+	modelTransferSpace = nullptr;
+
 	vkDestroyDescriptorPool(pipelineCreateInfo.device.logicalDevice, descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, descriptorSetLayout, nullptr);
 
-	for (size_t i = 0; i < uniformBuffer.size(); i++)
+	for (size_t i = 0; i < vpUniformBuffer.size(); i++)
 	{
-		vkDestroyBuffer(pipelineCreateInfo.device.logicalDevice, uniformBuffer[i], nullptr);
-		vkFreeMemory(pipelineCreateInfo.device.logicalDevice, uniformBufferMemory[i], nullptr);
+		vkDestroyBuffer(pipelineCreateInfo.device.logicalDevice, vpUniformBuffer[i], nullptr);
+		vkFreeMemory(pipelineCreateInfo.device.logicalDevice, vpUniformBufferMemory[i], nullptr);
+		vkDestroyBuffer(pipelineCreateInfo.device.logicalDevice, modelUniformDynamicBuffer[i], nullptr);
+		vkFreeMemory(pipelineCreateInfo.device.logicalDevice, modelUniformDynamicBufferMemory[i], nullptr);
 	}
 
 	vkDestroyPipeline(pipelineCreateInfo.device.logicalDevice, gfxPipeline, nullptr);
@@ -168,6 +173,7 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 		throw std::runtime_error("Failed to create graphics pipeline");
 	}
 
+	AllocateDynamicBufferTransferSpace();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
@@ -192,46 +198,72 @@ void Renderer::RenderPipeline::SetPerspectiveProjectionMatrix(float fov, float a
 {
 	PROFILE_FUNCTION();
 
-	mvp.projection = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
-	mvp.projection[1][1] *= -1.0f;
+	uboViewProjection.projection = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+	uboViewProjection.projection[1][1] *= -1.0f;
 }
 
 void Renderer::RenderPipeline::SetViewMatrixFromLookAt(const glm::vec3& location, const glm::vec3& lookAt, const glm::vec3& upVec)
 {
-	mvp.view = glm::lookAt(location, lookAt, upVec);
+	uboViewProjection.view = glm::lookAt(location, lookAt, upVec);
 }
 
 void Renderer::RenderPipeline::SetModelMatrix(const glm::mat4& mat)
 {
-	mvp.model = mat;
+
 }
 
-void Renderer::RenderPipeline::UpdateUniformBuffer(uint32_t imageIndex)
+void Renderer::RenderPipeline::UpdateUniformBuffers(uint32_t imageIndex, const std::vector<Mesh>& meshList)
 {
 	PROFILE_FUNCTION();
 
+	// Copy VP data
 	void* data = nullptr;
-	vkMapMemory(pipelineCreateInfo.device.logicalDevice, uniformBufferMemory[imageIndex], 0, sizeof(MVP), 0, &data);
-	memcpy(data, &mvp, sizeof(MVP));
-	vkUnmapMemory(pipelineCreateInfo.device.logicalDevice, uniformBufferMemory[imageIndex]);
+	vkMapMemory(pipelineCreateInfo.device.logicalDevice, vpUniformBufferMemory[imageIndex], 0, sizeof(UboViewProjection), 0, &data);
+	memcpy(data, &uboViewProjection, sizeof(UboViewProjection));
+	vkUnmapMemory(pipelineCreateInfo.device.logicalDevice, vpUniformBufferMemory[imageIndex]);
+
+	// Copy Model data
+	for (size_t i = 0; i < meshList.size(); i++)
+	{
+		UboModel* thisModel = (UboModel*)((uint64_t)modelTransferSpace + (i * modelUniformAlignment));
+		*thisModel = meshList[i].GetModel();
+	}
+
+	vkMapMemory(pipelineCreateInfo.device.logicalDevice, modelUniformDynamicBufferMemory[imageIndex], 0, modelUniformAlignment * meshList.size(), 0, &data);
+	memcpy(data, modelTransferSpace, modelUniformAlignment * meshList.size());
+	vkUnmapMemory(pipelineCreateInfo.device.logicalDevice, modelUniformDynamicBufferMemory[imageIndex]);
+}
+
+uint32_t Renderer::RenderPipeline::GetModelUniformAlignment() const
+{
+	return modelUniformAlignment;
 }
 
 void Renderer::RenderPipeline::CreateDescriptorSetLayout()
 {
 	PROFILE_FUNCTION();
-	// MVP Binding Info
+	// VP Binding Info
 
-	VkDescriptorSetLayoutBinding mvpLayoutBinding = {};
-	mvpLayoutBinding.binding = 0;
-	mvpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	mvpLayoutBinding.descriptorCount = 1;
-	mvpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	mvpLayoutBinding.pImmutableSamplers = nullptr;
+	VkDescriptorSetLayoutBinding vpLayoutBinding = {};
+	vpLayoutBinding.binding = 0;
+	vpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	vpLayoutBinding.descriptorCount = 1;
+	vpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	vpLayoutBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutBinding modelLayoutBinding = {};
+	modelLayoutBinding.binding = 1;
+	modelLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	modelLayoutBinding.descriptorCount = 1;
+	modelLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	modelLayoutBinding.pImmutableSamplers = nullptr;
+
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings = { vpLayoutBinding , modelLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.bindingCount = 1;
-	layoutCreateInfo.pBindings = &mvpLayoutBinding;
+	layoutCreateInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+	layoutCreateInfo.pBindings = layoutBindings.data();
 
 	VkResult vkResult = vkCreateDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, &layoutCreateInfo, nullptr, &descriptorSetLayout);
 
@@ -245,16 +277,26 @@ void Renderer::RenderPipeline::CreateUniformBuffers()
 {
 	PROFILE_FUNCTION();
 
-	VkDeviceSize bufferSize = sizeof(MVP);
-	uniformBuffer.resize(pipelineCreateInfo.swapchainImageCount);
-	uniformBufferMemory.resize(pipelineCreateInfo.swapchainImageCount);
+	VkDeviceSize vpBufferSize = sizeof(UboViewProjection);
+	VkDeviceSize modelBufferSize = static_cast<VkDeviceSize>(modelUniformAlignment) * MAX_OBJECTS;
+
+	vpUniformBuffer.resize(pipelineCreateInfo.swapchainImageCount);
+	vpUniformBufferMemory.resize(pipelineCreateInfo.swapchainImageCount);
+
+	modelUniformDynamicBuffer.resize(pipelineCreateInfo.swapchainImageCount);
+	modelUniformDynamicBufferMemory.resize(pipelineCreateInfo.swapchainImageCount);
 
 	for (size_t i = 0; i < pipelineCreateInfo.swapchainImageCount; i++)
 	{
 		Utils::CreateBuffer({ pipelineCreateInfo.device.physicalDevice,
-			pipelineCreateInfo.device.logicalDevice, bufferSize,
+			pipelineCreateInfo.device.logicalDevice, vpBufferSize,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			&uniformBuffer[i], &uniformBufferMemory[i] });
+			&vpUniformBuffer[i], &vpUniformBufferMemory[i] });
+
+		Utils::CreateBuffer({ pipelineCreateInfo.device.physicalDevice,
+			pipelineCreateInfo.device.logicalDevice, modelBufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			&modelUniformDynamicBuffer[i], &modelUniformDynamicBufferMemory[i] });
 	}
 }
 
@@ -262,15 +304,22 @@ void Renderer::RenderPipeline::CreateDescriptorPool()
 {
 	PROFILE_FUNCTION();
 
-	VkDescriptorPoolSize poolSize = {};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = static_cast<uint32_t>(uniformBuffer.size());
+	VkDescriptorPoolSize vpPoolSize = {};
+	vpPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	vpPoolSize.descriptorCount = static_cast<uint32_t>(vpUniformBuffer.size());
+
+	VkDescriptorPoolSize modelPoolSize = {};
+	modelPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	modelPoolSize.descriptorCount = static_cast<uint32_t>(modelUniformDynamicBuffer.size());
+
+	// List of pool sizes
+	std::vector<VkDescriptorPoolSize> descriptorPoolSizes = { vpPoolSize, modelPoolSize };
 
 	VkDescriptorPoolCreateInfo poolCreateInfo = {};
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolCreateInfo.maxSets = static_cast<uint32_t>(uniformBuffer.size());
-	poolCreateInfo.poolSizeCount = 1;
-	poolCreateInfo.pPoolSizes = &poolSize;
+	poolCreateInfo.maxSets = static_cast<uint32_t>(pipelineCreateInfo.swapchainImageCount);
+	poolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
+	poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
 
 	VkResult vkResult = vkCreateDescriptorPool(pipelineCreateInfo.device.logicalDevice, &poolCreateInfo, nullptr, &descriptorPool);
 
@@ -284,14 +333,14 @@ void Renderer::RenderPipeline::CreateDescriptorSets()
 {
 	PROFILE_FUNCTION();
 
-	descriptorSets.resize(uniformBuffer.size());
-	std::vector<VkDescriptorSetLayout> setLayouts(uniformBuffer.size(), descriptorSetLayout);
+	descriptorSets.resize(pipelineCreateInfo.swapchainImageCount);
+	std::vector<VkDescriptorSetLayout> setLayouts(pipelineCreateInfo.swapchainImageCount, descriptorSetLayout);
 
 	VkDescriptorSetAllocateInfo setAllocateInfo = {};
 
 	setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	setAllocateInfo.descriptorPool = descriptorPool;
-	setAllocateInfo.descriptorSetCount = static_cast<uint32_t>(uniformBuffer.size());
+	setAllocateInfo.descriptorSetCount = static_cast<uint32_t>(pipelineCreateInfo.swapchainImageCount);
 	setAllocateInfo.pSetLayouts = setLayouts.data();
 
 	VkResult vkResult = vkAllocateDescriptorSets(pipelineCreateInfo.device.logicalDevice, &setAllocateInfo, descriptorSets.data());
@@ -300,22 +349,48 @@ void Renderer::RenderPipeline::CreateDescriptorSets()
 		throw std::runtime_error("Failed to allocate descriptor set");
 	}
 
-	for (size_t i = 0; i < uniformBuffer.size(); i++)
+	for (size_t i = 0; i < pipelineCreateInfo.swapchainImageCount; i++)
 	{
-		VkDescriptorBufferInfo mvpBufferInfo = {};
-		mvpBufferInfo.buffer = uniformBuffer[i];
-		mvpBufferInfo.offset = 0;
-		mvpBufferInfo.range = sizeof(MVP);
+		VkDescriptorBufferInfo vpBufferInfo = {};
+		vpBufferInfo.buffer = vpUniformBuffer[i];
+		vpBufferInfo.offset = 0;
+		vpBufferInfo.range = sizeof(UboViewProjection);
 
-		VkWriteDescriptorSet mvpSetWrite = {};
-		mvpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		mvpSetWrite.dstSet = descriptorSets[i];
-		mvpSetWrite.dstBinding = 0;
-		mvpSetWrite.dstArrayElement = 0;
-		mvpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		mvpSetWrite.descriptorCount = 1;
-		mvpSetWrite.pBufferInfo = &mvpBufferInfo;
+		VkWriteDescriptorSet vpSetWrite = {};
+		vpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		vpSetWrite.dstSet = descriptorSets[i];
+		vpSetWrite.dstBinding = 0;
+		vpSetWrite.dstArrayElement = 0;
+		vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		vpSetWrite.descriptorCount = 1;
+		vpSetWrite.pBufferInfo = &vpBufferInfo;
 
-		vkUpdateDescriptorSets(pipelineCreateInfo.device.logicalDevice, 1, &mvpSetWrite, 0, nullptr);
+		VkDescriptorBufferInfo modelBufferInfo = {};
+		modelBufferInfo.buffer = modelUniformDynamicBuffer[i];
+		modelBufferInfo.offset = 0;
+		modelBufferInfo.range = modelUniformAlignment;
+
+		VkWriteDescriptorSet modelSetWrite = {};
+		modelSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		modelSetWrite.dstSet = descriptorSets[i];
+		modelSetWrite.dstBinding = 1;
+		modelSetWrite.dstArrayElement = 0;
+		modelSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		modelSetWrite.descriptorCount = 1;
+		modelSetWrite.pBufferInfo = &modelBufferInfo;
+
+		std::vector<VkWriteDescriptorSet> setWrites = { vpSetWrite, modelSetWrite };
+
+		vkUpdateDescriptorSets(pipelineCreateInfo.device.logicalDevice, static_cast<uint32_t>(setWrites.size()), setWrites.data(), 0, nullptr);
 	}
+}
+
+void Renderer::RenderPipeline::AllocateDynamicBufferTransferSpace()
+{
+	PROFILE_FUNCTION();
+
+	modelUniformAlignment = (sizeof(UboModel) + pipelineCreateInfo.minUniformBufferOffset - 1) & ~(pipelineCreateInfo.minUniformBufferOffset - 1);
+
+	// Create space in memory to hold dynamic buffer that is aligned to our required alignment and holds MAX_OBJECTS
+	modelTransferSpace = (UboModel*)_aligned_malloc(modelUniformAlignment * MAX_OBJECTS, modelUniformAlignment);
 }

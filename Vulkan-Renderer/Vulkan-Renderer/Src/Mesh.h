@@ -6,6 +6,11 @@
 
 using namespace Utilities;
 
+struct UboModel
+{
+	glm::mat4 model;
+};
+
 class Mesh
 {
 public:
@@ -16,9 +21,14 @@ public:
 	VkBuffer GetVertexBuffer() const;
 	VkBuffer GetIndexBuffer() const;
 	void DestroyBuffers();
+	void SetModel(const glm::mat4& newModel);
+	UboModel GetModel() const;
 	~Mesh();
 
 private:
+
+	UboModel uboModel;
+
 	size_t vertexCount = 0;
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;

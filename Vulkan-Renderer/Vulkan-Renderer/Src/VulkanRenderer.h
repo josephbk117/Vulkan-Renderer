@@ -27,7 +27,7 @@ namespace Renderer
 		int currentFrame = 0;
 
 		//Scene Objects
-		Mesh firstMesh;
+		std::vector<Mesh> meshList;
 
 		VkInstance instance;
 		VkQueue graphicsQueue;
@@ -36,6 +36,9 @@ namespace Renderer
 		VkSwapchainKHR swapChain;
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChainExtent;
+
+		mutable VkDeviceSize minUniformBufferOffset;
+
 		VkRenderPass renderPass;
 		RenderPipeline* renderPipelinePtr = nullptr;
 

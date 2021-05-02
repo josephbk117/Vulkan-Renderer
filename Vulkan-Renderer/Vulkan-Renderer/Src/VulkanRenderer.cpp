@@ -40,7 +40,10 @@ namespace Renderer
 			  {{-0.25, 0.5, 0.0}, {0,0,1}} };
 
 			std::vector<uint32_t> meshIndices = { 0, 1, 2 };
-			firstMesh = Mesh(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices);
+			meshList.emplace_back(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices);
+			meshList.emplace_back(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices);
+
+			meshList[0].SetModel(glm::mat4(1.0f));
 
 			CreateSynchronization();
 			RecordCommands();
@@ -66,9 +69,10 @@ namespace Renderer
 		float now = glfwGetTime();
 		deltaTime = now - lastTime;
 
-		angle += 1000.0f * deltaTime;
+		angle += deltaTime;
 
-		renderPipelinePtr->SetModelMatrix(glm::rotate(glm::mat4(1.0f), glm::radians(angle), GLOBAL_FORWARD));
+		meshList[0].SetModel(glm::rotate(glm::mat4(1.0f), glm::radians(angle * 100.0f), GLOBAL_FORWARD));
+		meshList[1].SetModel(glm::rotate(glm::mat4(1.0f), glm::radians(angle * -100.0f), GLOBAL_FORWARD));
 
 		lastTime = now;
 	}
@@ -83,7 +87,7 @@ namespace Renderer
 		uint32_t imageIndex = 0;
 		vkAcquireNextImageKHR(deviceHandle.logicalDevice, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-		renderPipelinePtr->UpdateUniformBuffer(imageIndex);
+		renderPipelinePtr->UpdateUniformBuffers(imageIndex, meshList);
 
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -126,7 +130,10 @@ namespace Renderer
 		PROFILE_FUNCTION();
 		vkDeviceWaitIdle(deviceHandle.logicalDevice);
 
-		firstMesh.DestroyBuffers();
+		for (size_t i = 0; i < meshList.size(); i++)
+		{
+			meshList[i].DestroyBuffers();
+		}
 
 		for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
 		{
@@ -172,7 +179,7 @@ namespace Renderer
 		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.pEngineName = "NIL";
 		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_0;
+		appInfo.apiVersion = VK_API_VERSION_1_2;
 
 		VkInstanceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -278,6 +285,11 @@ namespace Renderer
 					break;
 				}
 			}
+
+			VkPhysicalDeviceProperties deviceProps;
+			vkGetPhysicalDeviceProperties(deviceHandle.physicalDevice, &deviceProps);
+
+			minUniformBufferOffset = deviceProps.limits.minUniformBufferOffsetAlignment;
 		}
 		else
 		{
@@ -494,6 +506,7 @@ namespace Renderer
 		pipelineCreateInfo.device = deviceHandle;
 		pipelineCreateInfo.renderPass = renderPass;
 		pipelineCreateInfo.swapchainImageCount = swapChainImages.size();
+		pipelineCreateInfo.minUniformBufferOffset = minUniformBufferOffset;
 
 		renderPipelinePtr->Init(pipelineCreateInfo);
 
@@ -628,15 +641,22 @@ namespace Renderer
 
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelinePtr->GetPipeline());
 
-			VkBuffer vertexBuffers[] = { firstMesh.GetVertexBuffer() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-			vkCmdBindIndexBuffer(commandBuffers[i], firstMesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			for (size_t j = 0; j < meshList.size(); j++)
+			{
 
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-				renderPipelinePtr->GetPipelineLayout(), 0, 1, &renderPipelinePtr->GetDescriptorSet(i), 0, nullptr);
+				VkBuffer vertexBuffers[] = { meshList[j].GetVertexBuffer() };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+				vkCmdBindIndexBuffer(commandBuffers[i], meshList[j].GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(firstMesh.GetIndexCount()), 1, 0, 0, 0);
+				//Dynamic offset amount
+				uint32_t dynamicOffset = renderPipelinePtr->GetModelUniformAlignment() * j;
+
+				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
+					renderPipelinePtr->GetPipelineLayout(), 0, 1, &renderPipelinePtr->GetDescriptorSet(i), 1, &dynamicOffset);
+
+				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(meshList[j].GetIndexCount()), 1, 0, 0, 0);
+			}
 
 			vkCmdEndRenderPass(commandBuffers[i]);
 
