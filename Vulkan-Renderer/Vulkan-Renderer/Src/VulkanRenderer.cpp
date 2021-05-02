@@ -46,7 +46,6 @@ namespace Renderer
 			meshList[0].SetModel(glm::mat4(1.0f));
 
 			CreateSynchronization();
-			RecordCommands();
 		}
 		catch (const std::runtime_error& e)
 		{
@@ -86,6 +85,8 @@ namespace Renderer
 
 		uint32_t imageIndex = 0;
 		vkAcquireNextImageKHR(deviceHandle.logicalDevice, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+		RecordCommands(imageIndex);
 
 		renderPipelinePtr->UpdateUniformBuffers(imageIndex, meshList);
 
@@ -548,6 +549,7 @@ namespace Renderer
 
 		VkCommandPoolCreateInfo poolInfo = {};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		QueueFamilyIndices queueIndices = GetQueueFamilyIndices(deviceHandle.physicalDevice);
 		poolInfo.queueFamilyIndex = queueIndices.graphicsFamily;
@@ -608,7 +610,7 @@ namespace Renderer
 		}
 	}
 
-	void VulkanRenderer::RecordCommands()
+	void VulkanRenderer::RecordCommands(uint32_t currentImageIndex)
 	{
 		PROFILE_FUNCTION();
 
@@ -625,47 +627,45 @@ namespace Renderer
 		renderpassBeginInfo.pClearValues = clearValues;
 		renderpassBeginInfo.clearValueCount = 1;
 
-		for (size_t i = 0; i < commandBuffers.size(); i++)
+		renderpassBeginInfo.framebuffer = swapchainFrameBuffers[currentImageIndex];
+
+		VkResult vkResult = vkBeginCommandBuffer(commandBuffers[currentImageIndex], &beginInfo);
+		if (vkResult != VK_SUCCESS)
 		{
-			renderpassBeginInfo.framebuffer = swapchainFrameBuffers[i];
-
-			VkResult vkResult = vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
-			if (vkResult != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to record command buffer");
-			}
-
-			vkCmdBeginRenderPass(commandBuffers[i], &renderpassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			// Bind pipeline to used in render pass
-
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelinePtr->GetPipeline());
-
-			for (size_t j = 0; j < meshList.size(); j++)
-			{
-
-				VkBuffer vertexBuffers[] = { meshList[j].GetVertexBuffer() };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-				vkCmdBindIndexBuffer(commandBuffers[i], meshList[j].GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-				//Dynamic offset amount
-				uint32_t dynamicOffset = renderPipelinePtr->GetModelUniformAlignment() * j;
-
-				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-					renderPipelinePtr->GetPipelineLayout(), 0, 1, &renderPipelinePtr->GetDescriptorSet(i), 1, &dynamicOffset);
-
-				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(meshList[j].GetIndexCount()), 1, 0, 0, 0);
-			}
-
-			vkCmdEndRenderPass(commandBuffers[i]);
-
-			vkResult = vkEndCommandBuffer(commandBuffers[i]);
-			if (vkResult != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to end command buffer");
-			}
+			throw std::runtime_error("Failed to record command buffer");
 		}
+
+		vkCmdBeginRenderPass(commandBuffers[currentImageIndex], &renderpassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		// Bind pipeline to used in render pass
+
+		vkCmdBindPipeline(commandBuffers[currentImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelinePtr->GetPipeline());
+
+		for (size_t j = 0; j < meshList.size(); j++)
+		{
+
+			VkBuffer vertexBuffers[] = { meshList[j].GetVertexBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffers[currentImageIndex], 0, 1, vertexBuffers, offsets);
+			vkCmdBindIndexBuffer(commandBuffers[currentImageIndex], meshList[j].GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+			//Dynamic offset amount
+			uint32_t dynamicOffset = renderPipelinePtr->GetModelUniformAlignment() * j;
+
+			vkCmdBindDescriptorSets(commandBuffers[currentImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
+				renderPipelinePtr->GetPipelineLayout(), 0, 1, &renderPipelinePtr->GetDescriptorSet(currentImageIndex), 1, &dynamicOffset);
+
+			vkCmdDrawIndexed(commandBuffers[currentImageIndex], static_cast<uint32_t>(meshList[j].GetIndexCount()), 1, 0, 0, 0);
+		}
+
+		vkCmdEndRenderPass(commandBuffers[currentImageIndex]);
+
+		vkResult = vkEndCommandBuffer(commandBuffers[currentImageIndex]);
+		if (vkResult != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to end command buffer");
+		}
+
 	}
 
 	bool VulkanRenderer::CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const

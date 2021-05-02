@@ -65,7 +65,7 @@ namespace Renderer
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateSynchronization();
-		void RecordCommands();
+		void RecordCommands(uint32_t currentImageIndex);
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
 		bool CheckDeviceSuitable(VkPhysicalDevice device) const;
