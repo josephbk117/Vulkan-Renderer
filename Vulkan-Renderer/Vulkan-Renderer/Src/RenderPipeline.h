@@ -37,6 +37,8 @@ namespace Renderer
 		VkPipeline gfxPipeline;
 
 		VkDescriptorSetLayout descriptorSetLayout;
+		VkPushConstantRange pushConstantRange;
+
 		VkDescriptorPool descriptorPool;
 		std::vector<VkDescriptorSet> descriptorSets;
 
@@ -55,6 +57,7 @@ namespace Renderer
 		void CreateUniformBuffers();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
+		void CreatePushConstantRange();
 
 		void AllocateDynamicBufferTransferSpace();
 	};

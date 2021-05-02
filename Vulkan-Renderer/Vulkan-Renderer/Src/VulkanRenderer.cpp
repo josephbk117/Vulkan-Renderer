@@ -40,8 +40,11 @@ namespace Renderer
 			  {{-0.25, 0.5, 0.0}, {0,0,1}} };
 
 			std::vector<uint32_t> meshIndices = { 0, 1, 2 };
-			meshList.emplace_back(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices);
-			meshList.emplace_back(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices);
+
+			for (size_t i = 0; i < MAX_OBJECTS; i++)
+			{
+				meshList.emplace_back(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices);
+			}
 
 			meshList[0].SetModel(glm::mat4(1.0f));
 
@@ -70,8 +73,10 @@ namespace Renderer
 
 		angle += deltaTime;
 
-		meshList[0].SetModel(glm::rotate(glm::mat4(1.0f), glm::radians(angle * 100.0f), GLOBAL_FORWARD));
-		meshList[1].SetModel(glm::rotate(glm::mat4(1.0f), glm::radians(angle * -100.0f), GLOBAL_FORWARD));
+		for (size_t i = 0; i < MAX_OBJECTS; i++)
+		{
+			meshList[i].SetModel(glm::rotate(glm::mat4(1.0f), glm::radians(angle * i * 10.0f), GLOBAL_FORWARD));
+		}
 
 		lastTime = now;
 	}
@@ -651,6 +656,9 @@ namespace Renderer
 
 			//Dynamic offset amount
 			uint32_t dynamicOffset = renderPipelinePtr->GetModelUniformAlignment() * j;
+
+			vkCmdPushConstants(commandBuffers[currentImageIndex], renderPipelinePtr->GetPipelineLayout(),
+				VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &j);
 
 			vkCmdBindDescriptorSets(commandBuffers[currentImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
 				renderPipelinePtr->GetPipelineLayout(), 0, 1, &renderPipelinePtr->GetDescriptorSet(currentImageIndex), 1, &dynamicOffset);
