@@ -23,6 +23,6 @@ layout(location = 0) out vec3 outCol;
 
 void main()
 {
-	outCol = vec3(pushModel.model) * 0.1;//col;
+	outCol = vec3(pushModel.model) * 0.1 * col;
 	gl_Position = uboVP.projection * uboVP.view * uboModel.model * vec4(pos, 1.0);
 }
