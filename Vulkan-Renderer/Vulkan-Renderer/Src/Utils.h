@@ -1,14 +1,16 @@
 #pragma once
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLFW_INCLUDE_VULKAN
+#include <stb/stb_image.h>
+#include "ConstantsAndDefines.h"
+
+#define PROFILE_SCOPE(name) BenchmarkTimer timer##__LINE__(name)
+#define PROFILE_FUNCTION() PROFILE_SCOPE(__FUNCSIG__)
+
 #include <vector>
 #include <string>
 #include <fstream>
-#include <GLM/glm.hpp>
 #include <chrono>
 #include <thread>
 #include <algorithm>
-#include <stb/stb_image.h>
 
 namespace Utilities
 {
@@ -83,6 +85,14 @@ namespace Utilities
 		VkBuffer srcBuffer;
 		VkBuffer dstBuffer;
 		VkDeviceSize bufferSize;
+	};
+
+	struct TextureInfo
+	{
+		int32_t width = 0;
+		int32_t height = 0;
+		int32_t channelCount = 0;
+		VkDeviceSize imageSize;
 	};
 
 	struct ProfileResult
@@ -312,6 +322,26 @@ namespace Utilities
 			vkQueueWaitIdle(copyBufferInfo.transferQueue);
 
 			vkFreeCommandBuffers(copyBufferInfo.device, copyBufferInfo.transCommandPool, 1, &transferCommandBuffer);
+		}
+
+		static stbi_uc* LoadTextureFile(const std::string& fileName, TextureInfo& texInfo)
+		{
+			const std::string fileLoc = TEXTURE_PATH + fileName;
+			int width, height, channels;
+
+			stbi_uc* image = stbi_load(fileLoc.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+			if (image == nullptr)
+			{
+				throw std::runtime_error("Failed to load texture : " + fileName);
+			}
+
+			texInfo.channelCount = channels;
+			texInfo.height = height;
+			texInfo.width = width;
+			texInfo.imageSize = width * height * 4;
+
+			return image;
 		}
 	};
 

@@ -1,10 +1,15 @@
 #pragma once
-#include "Utils.h"
-#define COMPILED_SHADER_PATH "Res\\CompiledShaders\\"
-#define COMPILED_SHADER_SUFFIX ".spv"
-#define SHADER_PATH = "Res\\Shaders\\"
-#define PROFILE_SCOPE(name) BenchmarkTimer timer##__LINE__(name)
-#define PROFILE_FUNCTION() PROFILE_SCOPE(__FUNCSIG__)
+#define STB_IMAGE_IMPLEMENTATION
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLFW_INCLUDE_VULKAN
+constexpr auto COMPILED_SHADER_PATH = "Res\\CompiledShaders\\";
+constexpr auto COMPILED_SHADER_SUFFIX = ".spv";
+constexpr auto SHADER_PATH = "Res\\Shaders\\";
+constexpr auto TEXTURE_PATH = "Res\\Textures\\";
+#include <vector>
+#include <GLM/glm.hpp>
+//#include <stb/stb_image.h>
+
 
 constexpr uint32_t MAX_OBJECTS = 10;
 
