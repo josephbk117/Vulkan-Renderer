@@ -69,14 +69,14 @@ namespace Renderer
 
 		float deltaTime = 0.0f;
 
-		float now = glfwGetTime();
+		float now = static_cast<float>(glfwGetTime());
 		deltaTime = now - lastTime;
 
 		angle += deltaTime;
 
 		for (size_t i = 0; i < MAX_OBJECTS; i++)
 		{
-			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, i * -0.25f));
+			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, glm::sin((i+1) * angle * 0.5f)));
 			meshList[i].SetModel(glm::rotate(translation, glm::radians(angle * (i + 1) * 10.0f), GLOBAL_FORWARD));
 		}
 
@@ -703,7 +703,7 @@ namespace Renderer
 			vkCmdBindIndexBuffer(commandBuffers[currentImageIndex], meshList[j].GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 			//Dynamic offset amount
-			uint32_t dynamicOffset = renderPipelinePtr->GetModelUniformAlignment() * j;
+			uint32_t dynamicOffset = renderPipelinePtr->GetModelUniformAlignment() * static_cast<uint32_t>(j);
 
 			vkCmdPushConstants(commandBuffers[currentImageIndex], renderPipelinePtr->GetPipelineLayout(),
 				VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &j);
