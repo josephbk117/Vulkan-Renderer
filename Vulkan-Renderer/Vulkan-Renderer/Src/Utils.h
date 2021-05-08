@@ -8,6 +8,7 @@
 #include <chrono>
 #include <thread>
 #include <algorithm>
+#include <stb/stb_image.h>
 
 namespace Utilities
 {
