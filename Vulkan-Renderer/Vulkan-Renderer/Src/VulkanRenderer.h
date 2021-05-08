@@ -46,6 +46,10 @@ namespace Renderer
 		std::vector<VkFramebuffer> swapchainFrameBuffers;
 		std::vector<VkCommandBuffer> commandBuffers;
 
+		VkImage depthBufferImage;
+		VkDeviceMemory depthBufferImageMemory;
+		VkImageView depthBufferImageView;
+
 		VkDebugUtilsMessengerEXT debugMessenger;
 		VkCommandPool gfxCommandPool;
 		std::vector<VkSemaphore> imageAvailable;
@@ -61,6 +65,7 @@ namespace Renderer
 		void CreateSwapChain();
 		void CreateRenderPass();
 		void CreateRenderPipeline();
+		void CreateDepthBufferImage();
 		void CreateFrameBuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
@@ -75,6 +80,8 @@ namespace Renderer
 		VkSurfaceFormatKHR GetSuitableSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& surfaceFormats) const;
 		VkPresentModeKHR GetSuitablePresentationMode(const std::vector<VkPresentModeKHR>& presentationMode) const;
 		VkExtent2D GetSuitableSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const;
+		VkFormat GetSuitableFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags) const;
+		VkImage CreateImage(const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory);
 		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 

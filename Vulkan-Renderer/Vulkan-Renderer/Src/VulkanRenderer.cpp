@@ -25,6 +25,7 @@ namespace Renderer
 			CreateSwapChain();
 			CreateRenderPass();
 			CreateRenderPipeline();
+			CreateDepthBufferImage();
 			CreateFrameBuffers();
 			CreateCommandPool();
 			CreateCommandBuffers();
@@ -75,7 +76,8 @@ namespace Renderer
 
 		for (size_t i = 0; i < MAX_OBJECTS; i++)
 		{
-			meshList[i].SetModel(glm::rotate(glm::mat4(1.0f), glm::radians(angle * i * 10.0f), GLOBAL_FORWARD));
+			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, i * -0.25f));
+			meshList[i].SetModel(glm::rotate(translation, glm::radians(angle * (i + 1) * 10.0f), GLOBAL_FORWARD));
 		}
 
 		lastTime = now;
@@ -135,6 +137,10 @@ namespace Renderer
 	{
 		PROFILE_FUNCTION();
 		vkDeviceWaitIdle(deviceHandle.logicalDevice);
+
+		vkDestroyImageView(deviceHandle.logicalDevice, depthBufferImageView, nullptr);
+		vkDestroyImage(deviceHandle.logicalDevice, depthBufferImage, nullptr);
+		vkFreeMemory(deviceHandle.logicalDevice, depthBufferImageMemory, nullptr); 
 
 		for (size_t i = 0; i < meshList.size(); i++)
 		{
@@ -436,6 +442,8 @@ namespace Renderer
 	{
 		PROFILE_FUNCTION();
 
+
+		// Attachments
 		VkAttachmentDescription colorAttachment = {};
 		colorAttachment.format = swapChainImageFormat;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -443,18 +451,35 @@ namespace Renderer
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+		VkAttachmentDescription depthAttachment = {};
+		depthAttachment.format = GetSuitableFormat(
+			{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
+			VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		// References
 		VkAttachmentReference colorAttachmentReference = {};
 		colorAttachmentReference.attachment = 0;
 		colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthAttachmentReference = {};
+		depthAttachmentReference.attachment = 1;
+		depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentReference;
+		subpass.pDepthStencilAttachment = &depthAttachmentReference;
 
 		std::array<VkSubpassDependency, 2> subpassDependencies;
 		subpassDependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -473,10 +498,12 @@ namespace Renderer
 		subpassDependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 		subpassDependencies[1].dependencyFlags = 0;
 
+		std::array<VkAttachmentDescription, 2> renderPassAttachments = { colorAttachment, depthAttachment };
+
 		VkRenderPassCreateInfo renderPassCreateInfo = {};
 		renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassCreateInfo.attachmentCount = 1;
-		renderPassCreateInfo.pAttachments = &colorAttachment;
+		renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(renderPassAttachments.size());
+		renderPassCreateInfo.pAttachments = renderPassAttachments.data();
 		renderPassCreateInfo.subpassCount = 1;
 		renderPassCreateInfo.pSubpasses = &subpass;
 		renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependencies.size());
@@ -520,6 +547,25 @@ namespace Renderer
 		vkDestroyShaderModule(deviceHandle.logicalDevice, vertexShaderModule, nullptr);
 	}
 
+	void VulkanRenderer::CreateDepthBufferImage()
+	{
+		VkFormat depthFormat = GetSuitableFormat(
+			{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT }, 
+			VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+		CreateImageInfo imageCreateInfo = {};
+		imageCreateInfo.format = depthFormat;
+		imageCreateInfo.width = swapChainExtent.width;
+		imageCreateInfo.height = swapChainExtent.height;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.useFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		imageCreateInfo.propFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		depthBufferImage = CreateImage(imageCreateInfo, &depthBufferImageMemory);
+
+		depthBufferImageView = CreateImageView(depthBufferImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	}
+
 	void VulkanRenderer::CreateFrameBuffers()
 	{
 		PROFILE_FUNCTION();
@@ -528,7 +574,7 @@ namespace Renderer
 
 		for (size_t i = 0; i < swapchainFrameBuffers.size(); i++)
 		{
-			std::array<VkImageView, 1> attachments = { swapChainImages[i].imageView };
+			std::array<VkImageView, 2> attachments = { swapChainImages[i].imageView, depthBufferImageView };
 
 			VkFramebufferCreateInfo frameBufferCreateInfo = {};
 			frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -628,9 +674,11 @@ namespace Renderer
 		renderpassBeginInfo.renderArea.offset = { 0, 0 };
 		renderpassBeginInfo.renderArea.extent = swapChainExtent;
 
-		VkClearValue clearValues[] = { {0.3f, 0.5f, 0.6f, 1.0f} };
-		renderpassBeginInfo.pClearValues = clearValues;
-		renderpassBeginInfo.clearValueCount = 1;
+		std::array<VkClearValue, 2> clearValues = {};
+		clearValues[0].color = { 0.3f, 0.5f, 0.6f, 1.0f };
+		clearValues[1].depthStencil.depth = 1.0f;
+		renderpassBeginInfo.pClearValues = clearValues.data();
+		renderpassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 
 		renderpassBeginInfo.framebuffer = swapchainFrameBuffers[currentImageIndex];
 
@@ -906,6 +954,70 @@ namespace Renderer
 
 			return extent;
 		}
+	}
+
+	VkFormat VulkanRenderer::GetSuitableFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags) const
+	{
+		for (VkFormat format : formats)
+		{
+			VkFormatProperties props;
+			vkGetPhysicalDeviceFormatProperties(deviceHandle.physicalDevice, format, &props);
+
+			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & featureFlags) == featureFlags)
+			{
+				return format;
+			}
+			else if(tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & featureFlags) == featureFlags)
+			{
+				return format;
+			}
+		}
+
+		throw std::runtime_error("Failed to find a matching format!");
+	}
+
+	VkImage VulkanRenderer::CreateImage(const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory)
+	{
+		VkImageCreateInfo imageCreateInfo = {};
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.extent.width = createImageInfo.width;
+		imageCreateInfo.extent.height = createImageInfo.height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.format = createImageInfo.format;
+		imageCreateInfo.tiling = createImageInfo.tiling;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageCreateInfo.usage = createImageInfo.useFlags;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VkImage image;
+
+		VkResult vkResult = vkCreateImage(deviceHandle.logicalDevice, &imageCreateInfo, nullptr, &image);
+		if (vkResult != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create image ");
+		}
+
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(deviceHandle.logicalDevice, image, &memoryRequirements);
+
+		VkMemoryAllocateInfo memoryAllocInfo = {};
+		memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		memoryAllocInfo.allocationSize = memoryRequirements.size;
+		memoryAllocInfo.memoryTypeIndex = Utils::FindMemoryTypeIndex(deviceHandle.physicalDevice, memoryRequirements.memoryTypeBits, createImageInfo.propFlags);
+
+		vkResult = vkAllocateMemory(deviceHandle.logicalDevice, &memoryAllocInfo, nullptr, imageMemory);
+		if (vkResult != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate memory for image");
+		}
+
+		vkBindImageMemory(deviceHandle.logicalDevice, image, *imageMemory, 0);
+
+		return image;
 	}
 
 	VkImageView VulkanRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)

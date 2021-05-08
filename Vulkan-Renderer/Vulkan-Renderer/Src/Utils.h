@@ -53,6 +53,16 @@ namespace Utilities
 		glm::mat4 view;
 	};
 
+	struct CreateImageInfo
+	{
+		uint32_t width;
+		uint32_t height;
+		VkFormat format;
+		VkImageTiling tiling;
+		VkImageUsageFlags useFlags;
+		VkMemoryPropertyFlags propFlags;
+	};
+
 	struct CreateBufferInfo
 	{
 		VkPhysicalDevice physicalDevice;
