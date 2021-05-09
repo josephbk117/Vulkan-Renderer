@@ -36,6 +36,7 @@ namespace Renderer
 		VkSwapchainKHR swapChain;
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChainExtent;
+		VkSampler textureSampler;
 
 		mutable VkDeviceSize minUniformBufferOffset;
 
@@ -54,6 +55,7 @@ namespace Renderer
 
 		// Assets
 		std::vector<TextureHandle> textureHandles;
+		std::vector<VkImageView> textureImgViews;
 
 		// Synchronization
 		std::vector<VkSemaphore> imageAvailable;
@@ -78,7 +80,9 @@ namespace Renderer
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateSynchronization();
-		int32_t CreateTextureImage(const std::string fileName);
+		void CreateTextureSampler();
+		int32_t CreateTexture(const std::string& fileName);
+		int32_t CreateTextureImage(const std::string& fileName);
 		void RecordCommands(uint32_t currentImageIndex);
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;

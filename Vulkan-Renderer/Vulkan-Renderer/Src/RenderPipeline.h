@@ -24,11 +24,13 @@ namespace Renderer
 		VkPipeline GetPipeline() const;
 		VkPipelineLayout GetPipelineLayout() const;
 		VkDescriptorSet& GetDescriptorSet(uint32_t index);
+		VkDescriptorSet& GetSamplerDescriptorSet(uint32_t index);
 		void SetPerspectiveProjectionMatrix(float fov, float aspectRatio, float nearPlane, float farPlane);
 		void SetViewMatrixFromLookAt(const glm::vec3& location, const glm::vec3& lookAt, const glm::vec3& upVec);
 		void SetModelMatrix(const glm::mat4& mat);
 		void UpdateUniformBuffers(uint32_t imageIndex, const std::vector<Mesh>& meshList);
 		uint32_t GetModelUniformAlignment() const;
+		uint32_t CreateTextureDescriptor(VkImageView textureImage, VkSampler textureSampler);
 
 	private:
 
@@ -37,10 +39,13 @@ namespace Renderer
 		VkPipeline gfxPipeline;
 
 		VkDescriptorSetLayout descriptorSetLayout;
+		VkDescriptorSetLayout samplerSetLayout;
 		VkPushConstantRange pushConstantRange;
 
 		VkDescriptorPool descriptorPool;
-		std::vector<VkDescriptorSet> descriptorSets;
+		VkDescriptorPool samplerDescriptorPool;
+		std::vector<VkDescriptorSet> descriptorSets; // We need as many of these as there are swapchain images
+		std::vector<VkDescriptorSet> samplerDescriptorSets; // We need one of these per image
 
 		uint32_t modelUniformAlignment;
 		UboModel* modelTransferSpace;

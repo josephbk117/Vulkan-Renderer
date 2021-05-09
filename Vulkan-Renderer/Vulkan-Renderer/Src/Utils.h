@@ -48,6 +48,7 @@ namespace Utilities
 	{
 		glm::vec3 pos;
 		glm::vec3 col;
+		glm::vec2 uv;
 	};
 
 	struct UboViewProjection

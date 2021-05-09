@@ -6,14 +6,17 @@ Mesh::Mesh()
 
 }
 
-Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices, std::vector<uint32_t>* indices)
+Mesh::Mesh(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices, std::vector<uint32_t>* indices, uint32_t texId)
 {
 	PROFILE_FUNCTION();
 
 	vertexCount = vertices->size();
 	indexCount = indices->size();
+
 	this->physicalDevice = physicalDevice;
 	this->device = device;
+	this->texId = texId;
+
 	CreateVertexBuffer(transferQueue, transferCommandPool, vertices);
 	CreateIndexBuffer(transferQueue, transferCommandPool, indices);
 
@@ -59,6 +62,11 @@ void Mesh::SetModel(const glm::mat4& newModel)
 UboModel Mesh::GetModel() const
 {
 	return uboModel;
+}
+
+uint32_t Mesh::GetTexId() const
+{
+	return texId;
 }
 
 Mesh::~Mesh()

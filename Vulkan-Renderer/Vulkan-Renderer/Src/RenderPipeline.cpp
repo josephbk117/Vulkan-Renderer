@@ -11,6 +11,8 @@ Renderer::RenderPipeline::~RenderPipeline()
 	_aligned_free(modelTransferSpace);
 	modelTransferSpace = nullptr;
 
+	vkDestroyDescriptorPool(pipelineCreateInfo.device.logicalDevice, samplerDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, samplerSetLayout, nullptr);
 	vkDestroyDescriptorPool(pipelineCreateInfo.device.logicalDevice, descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, descriptorSetLayout, nullptr);
 
@@ -58,16 +60,24 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	* */
 	vertexBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	std::array<VkVertexInputAttributeDescription, 2> vertAttributeDescs;
+	std::array<VkVertexInputAttributeDescription, 3> vertAttributeDescs;
+	// Position
 	vertAttributeDescs[0].binding = 0;
 	vertAttributeDescs[0].location = 0;
 	vertAttributeDescs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 	vertAttributeDescs[0].offset = offsetof(Vertex, pos);
 
+	// Color
 	vertAttributeDescs[1].binding = 0;
 	vertAttributeDescs[1].location = 1;
 	vertAttributeDescs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 	vertAttributeDescs[1].offset = offsetof(Vertex, col);
+
+	// UV
+	vertAttributeDescs[2].binding = 0;
+	vertAttributeDescs[2].location = 2;
+	vertAttributeDescs[2].format = VK_FORMAT_R32G32_SFLOAT;
+	vertAttributeDescs[2].offset = offsetof(Vertex, uv);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
 
@@ -133,11 +143,14 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	colorBlendingCreateInfo.attachmentCount = 1;
 	colorBlendingCreateInfo.pAttachments = &colorBlendAttachmentState;
 
+	// Pipeline layout
+
+	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { descriptorSetLayout, samplerSetLayout };
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutCreateInfo.setLayoutCount = 1;
-	pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
@@ -202,6 +215,11 @@ VkDescriptorSet& Renderer::RenderPipeline::GetDescriptorSet(uint32_t index)
 	return (descriptorSets[index]);
 }
 
+VkDescriptorSet& Renderer::RenderPipeline::GetSamplerDescriptorSet(uint32_t index)
+{
+	return samplerDescriptorSets[index];
+}
+
 void Renderer::RenderPipeline::SetPerspectiveProjectionMatrix(float fov, float aspectRatio, float nearPlane, float farPlane)
 {
 	PROFILE_FUNCTION();
@@ -247,6 +265,47 @@ uint32_t Renderer::RenderPipeline::GetModelUniformAlignment() const
 	return modelUniformAlignment;
 }
 
+uint32_t Renderer::RenderPipeline::CreateTextureDescriptor(VkImageView textureImage, VkSampler textureSampler)
+{
+	PROFILE_FUNCTION();
+
+	VkDescriptorSet descriptorSet;
+
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = samplerDescriptorPool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &samplerSetLayout;
+
+	VkResult vkResult = vkAllocateDescriptorSets(pipelineCreateInfo.device.logicalDevice, &allocInfo, &descriptorSet);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate texture descriptor sets!");
+	}
+
+	VkDescriptorImageInfo imageInfo = {};
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView = textureImage;
+	imageInfo.sampler = textureSampler;
+
+
+	VkWriteDescriptorSet descriptorWrite = {};
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.dstSet = descriptorSet;
+	descriptorWrite.dstBinding = 0;
+	descriptorWrite.dstArrayElement = 0;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrite.descriptorCount = 1;
+	descriptorWrite.pImageInfo = &imageInfo;
+
+	vkUpdateDescriptorSets(pipelineCreateInfo.device.logicalDevice, 1, &descriptorWrite, 0, nullptr);
+
+	samplerDescriptorSets.push_back(descriptorSet);
+
+	return static_cast<uint32_t>(samplerDescriptorSets.size()) - 1;
+}
+
 void Renderer::RenderPipeline::CreateDescriptorSetLayout()
 {
 	PROFILE_FUNCTION();
@@ -279,6 +338,27 @@ void Renderer::RenderPipeline::CreateDescriptorSetLayout()
 	{
 		throw std::runtime_error("Failed to create descriptor set layout");
 	}
+
+	// Texture sampler descriptor set layout
+	VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+	samplerLayoutBinding.binding = 0;
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo textureLayoutCreateInfo = {};
+	textureLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	textureLayoutCreateInfo.bindingCount = 1;
+	textureLayoutCreateInfo.pBindings = &samplerLayoutBinding;
+
+	vkResult = vkCreateDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, &textureLayoutCreateInfo, nullptr, &samplerSetLayout);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor set layout");
+	}
+
 }
 
 void Renderer::RenderPipeline::CreateUniformBuffers()
@@ -312,6 +392,8 @@ void Renderer::RenderPipeline::CreateDescriptorPool()
 {
 	PROFILE_FUNCTION();
 
+	// Create uniform descriptor pool
+
 	VkDescriptorPoolSize vpPoolSize = {};
 	vpPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	vpPoolSize.descriptorCount = static_cast<uint32_t>(vpUniformBuffer.size());
@@ -335,6 +417,27 @@ void Renderer::RenderPipeline::CreateDescriptorPool()
 	{
 		throw std::runtime_error("Failed to create descriptor pool");
 	}
+
+	// Create sampler descriptor pool
+	// Texture sampler
+
+	VkDescriptorPoolSize samplerPoolSize = {};
+	samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerPoolSize.descriptorCount = MAX_OBJECTS; // TODO : Assumes 1 texture per object, Need to fix this
+
+	VkDescriptorPoolCreateInfo samplerPoolCreateInfo = {};
+	samplerPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	samplerPoolCreateInfo.maxSets = MAX_OBJECTS;
+	samplerPoolCreateInfo.poolSizeCount = 1;
+	samplerPoolCreateInfo.pPoolSizes = &samplerPoolSize;
+
+	vkResult = vkCreateDescriptorPool(pipelineCreateInfo.device.logicalDevice, &samplerPoolCreateInfo, nullptr, &samplerDescriptorPool);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor pool");
+	}
+
 }
 
 void Renderer::RenderPipeline::CreateDescriptorSets()

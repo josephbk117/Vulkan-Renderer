@@ -29,8 +29,10 @@ namespace Renderer
 			CreateFrameBuffers();
 			CreateCommandPool();
 			CreateCommandBuffers();
+			CreateTextureSampler();
+			CreateSynchronization();
 
-			int32_t texture1 = CreateTextureImage("testTexture.jpg");
+			int32_t texture1Id = CreateTexture("testTexture.jpg");
 
 			renderPipelinePtr->SetPerspectiveProjectionMatrix(glm::radians(60.0f), (float)swapChainExtent.width / swapChainExtent.height, 0.1f, 100.0f);
 			renderPipelinePtr->SetViewMatrixFromLookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f), GLOBAL_UP);
@@ -38,20 +40,20 @@ namespace Renderer
 
 			//Create meshes
 			std::vector<Vertex> meshVertices =
-			{ {{0.0f, -0.0f, 0.0}, {1.0, 0.0, 0.0}},
-			  {{0.25, 0.5, 0.0}, {0,1,0}},
-			  {{-0.25, 0.5, 0.0}, {0,0,1}} };
+			{
+			{{-0.25, 0.1, 0.0}, {1,0,0}, {0,0}},
+			{{0.25, 0.1, 0.0}, {0,1,0}, {0, 1}},
+			{{0.25, -0.1, 0.0}, {0,0,1}, {1, 1}},
+			{{-0.25, -0.1, 0.0}, {0,1,1}, {1, 0}}
+			};
 
-			std::vector<uint32_t> meshIndices = { 0, 1, 2 };
+			std::vector<uint32_t> meshIndices = { 2, 1, 0, 0, 3, 2 };
 
 			for (size_t i = 0; i < MAX_OBJECTS; i++)
 			{
-				meshList.emplace_back(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices);
+				meshList.emplace_back(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices, texture1Id);
 			}
 
-			meshList[0].SetModel(glm::mat4(1.0f));
-
-			CreateSynchronization();
 		}
 		catch (const std::runtime_error& e)
 		{
@@ -78,7 +80,7 @@ namespace Renderer
 
 		for (size_t i = 0; i < MAX_OBJECTS; i++)
 		{
-			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, glm::sin((i+1) * angle * 0.5f)));
+			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, glm::sin((i + 1) * angle * 0.5f)));
 			meshList[i].SetModel(glm::rotate(translation, glm::radians(angle * (i + 1) * 10.0f), GLOBAL_FORWARD));
 		}
 
@@ -140,15 +142,18 @@ namespace Renderer
 		PROFILE_FUNCTION();
 		vkDeviceWaitIdle(deviceHandle.logicalDevice);
 
+		vkDestroySampler(deviceHandle.logicalDevice, textureSampler, nullptr);
+
 		for (size_t i = 0; i < textureHandles.size(); i++)
 		{
+			vkDestroyImageView(deviceHandle.logicalDevice, textureImgViews[i], nullptr);
 			vkDestroyImage(deviceHandle.logicalDevice, textureHandles[i].image, nullptr);
 			vkFreeMemory(deviceHandle.logicalDevice, textureHandles[i].memory, nullptr);
 		}
 
 		vkDestroyImageView(deviceHandle.logicalDevice, depthBufferImageView, nullptr);
 		vkDestroyImage(deviceHandle.logicalDevice, depthBufferImage, nullptr);
-		vkFreeMemory(deviceHandle.logicalDevice, depthBufferImageMemory, nullptr); 
+		vkFreeMemory(deviceHandle.logicalDevice, depthBufferImageMemory, nullptr);
 
 		for (size_t i = 0; i < meshList.size(); i++)
 		{
@@ -348,6 +353,7 @@ namespace Renderer
 
 		VkPhysicalDeviceFeatures deviceFeatures = {};
 		deviceFeatures.depthClamp = VK_TRUE;
+		deviceFeatures.samplerAnisotropy = VK_TRUE;
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
 		VkResult vkResult = vkCreateDevice(deviceHandle.physicalDevice, &deviceCreateInfo, nullptr, &deviceHandle.logicalDevice);
@@ -558,7 +564,7 @@ namespace Renderer
 	void VulkanRenderer::CreateDepthBufferImage()
 	{
 		VkFormat depthFormat = GetSuitableFormat(
-			{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT }, 
+			{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
 			VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 		CreateImageInfo imageCreateInfo = {};
@@ -669,7 +675,45 @@ namespace Renderer
 		}
 	}
 
-	int32_t VulkanRenderer::CreateTextureImage(const std::string fileName)
+	void VulkanRenderer::CreateTextureSampler()
+	{
+		VkSamplerCreateInfo samplerCreateInfo = {};
+		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerCreateInfo.anisotropyEnable = VK_TRUE;
+		samplerCreateInfo.maxAnisotropy = 16.0f;
+		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerCreateInfo.mipLodBias = 0.0f;
+		samplerCreateInfo.minLod = 0.0f;
+		samplerCreateInfo.maxLod = 0.0f;
+
+		VkResult vkResult = vkCreateSampler(deviceHandle.logicalDevice, &samplerCreateInfo, nullptr, &textureSampler);
+
+		if (vkResult != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create texture sampler!");
+		}
+	}
+
+	int32_t VulkanRenderer::CreateTexture(const std::string& fileName)
+	{
+		int32_t textureImgLoc = CreateTextureImage(fileName);
+
+		VkImageView imgView = CreateImageView(textureHandles[textureImgLoc].image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+		textureImgViews.push_back(imgView);
+
+		int32_t descLoc = renderPipelinePtr->CreateTextureDescriptor(imgView, textureSampler);
+
+		return descLoc;
+	}
+
+	int32_t VulkanRenderer::CreateTextureImage(const std::string& fileName)
 	{
 		TextureInfo texInfo;
 		stbi_uc* imageData = Utils::LoadTextureFile(fileName, texInfo);
@@ -796,8 +840,12 @@ namespace Renderer
 			vkCmdPushConstants(commandBuffers[currentImageIndex], renderPipelinePtr->GetPipelineLayout(),
 				VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &j);
 
+			std::array<VkDescriptorSet, 2> descSetGroup = {
+				renderPipelinePtr->GetDescriptorSet(currentImageIndex),
+				renderPipelinePtr->GetSamplerDescriptorSet(meshList[j].GetTexId()) };
+
 			vkCmdBindDescriptorSets(commandBuffers[currentImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-				renderPipelinePtr->GetPipelineLayout(), 0, 1, &renderPipelinePtr->GetDescriptorSet(currentImageIndex), 1, &dynamicOffset);
+				renderPipelinePtr->GetPipelineLayout(), 0, static_cast<uint32_t>(descSetGroup.size()), descSetGroup.data(), 1, &dynamicOffset);
 
 			vkCmdDrawIndexed(commandBuffers[currentImageIndex], static_cast<uint32_t>(meshList[j].GetIndexCount()), 1, 0, 0, 0);
 		}
@@ -880,6 +928,9 @@ namespace Renderer
 	{
 		PROFILE_FUNCTION();
 
+		VkPhysicalDeviceFeatures deviceFeatures = {};
+		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
 		QueueFamilyIndices indices = GetQueueFamilyIndices(device);
 		bool extensionsSupported = CheckDeviceExtensionSupport(device);
 
@@ -890,7 +941,7 @@ namespace Renderer
 			swapChainValid = !swapChainInfo.presentationModes.empty() && !swapChainInfo.surfaceFormats.empty();
 		}
 
-		return indices.IsValid() && extensionsSupported && swapChainValid;
+		return indices.IsValid() && extensionsSupported && swapChainValid && deviceFeatures.samplerAnisotropy;
 	}
 
 	bool VulkanRenderer::CheckValidationLayerSupport(std::vector<const char*>* validationLayers) const
@@ -1055,7 +1106,7 @@ namespace Renderer
 			{
 				return format;
 			}
-			else if(tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & featureFlags) == featureFlags)
+			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & featureFlags) == featureFlags)
 			{
 				return format;
 			}
