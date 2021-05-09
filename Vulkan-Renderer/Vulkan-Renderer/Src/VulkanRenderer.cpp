@@ -30,7 +30,7 @@ namespace Renderer
 			CreateCommandPool();
 			CreateCommandBuffers();
 
-			int32_t texture1 = CreateTexture("testTexture.jpg");
+			int32_t texture1 = CreateTextureImage("testTexture.jpg");
 
 			renderPipelinePtr->SetPerspectiveProjectionMatrix(glm::radians(60.0f), (float)swapChainExtent.width / swapChainExtent.height, 0.1f, 100.0f);
 			renderPipelinePtr->SetViewMatrixFromLookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f), GLOBAL_UP);
@@ -669,7 +669,7 @@ namespace Renderer
 		}
 	}
 
-	int32_t VulkanRenderer::CreateTexture(const std::string fileName)
+	int32_t VulkanRenderer::CreateTextureImage(const std::string fileName)
 	{
 		TextureInfo texInfo;
 		stbi_uc* imageData = Utils::LoadTextureFile(fileName, texInfo);
