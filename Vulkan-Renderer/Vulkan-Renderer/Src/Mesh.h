@@ -15,7 +15,7 @@ class Mesh
 {
 public:
 	Mesh();
-	Mesh(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices, std::vector<uint32_t>* indices);
+	Mesh(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices, std::vector<uint32_t>* indices, uint32_t texId);
 	size_t GetVertexCount() const;
 	size_t GetIndexCount() const;
 	VkBuffer GetVertexBuffer() const;
@@ -23,22 +23,25 @@ public:
 	void DestroyBuffers();
 	void SetModel(const glm::mat4& newModel);
 	UboModel GetModel() const;
+	uint32_t GetTexId() const;
 	~Mesh();
 
 private:
 
 	UboModel uboModel;
 
+	uint32_t texId;
+
 	size_t vertexCount = 0;
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
+	VkBuffer vertexBuffer = nullptr;
+	VkDeviceMemory vertexBufferMemory = nullptr;
 
 	size_t indexCount = 0;
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
+	VkBuffer indexBuffer = nullptr;
+	VkDeviceMemory indexBufferMemory = nullptr;
 
-	VkPhysicalDevice physicalDevice;
-	VkDevice device;
+	VkPhysicalDevice physicalDevice = nullptr;
+	VkDevice device = nullptr;
 
 	void CreateVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices);
 	void CreateIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<uint32_t>* indices);
