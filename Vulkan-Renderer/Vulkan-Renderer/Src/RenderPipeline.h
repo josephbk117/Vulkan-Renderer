@@ -35,20 +35,20 @@ namespace Renderer
 	private:
 
 		RenderPipelineCreateInfo pipelineCreateInfo;
-		VkPipelineLayout pipelineLayout;
-		VkPipeline gfxPipeline;
+		VkPipelineLayout pipelineLayout = nullptr;
+		VkPipeline gfxPipeline = nullptr;
 
-		VkDescriptorSetLayout descriptorSetLayout;
-		VkDescriptorSetLayout samplerSetLayout;
+		VkDescriptorSetLayout descriptorSetLayout = nullptr;
+		VkDescriptorSetLayout samplerSetLayout = nullptr;
 		VkPushConstantRange pushConstantRange;
 
-		VkDescriptorPool descriptorPool;
-		VkDescriptorPool samplerDescriptorPool;
+		VkDescriptorPool descriptorPool = nullptr;
+		VkDescriptorPool samplerDescriptorPool = nullptr;
 		std::vector<VkDescriptorSet> descriptorSets; // We need as many of these as there are swapchain images
 		std::vector<VkDescriptorSet> samplerDescriptorSets; // We need one of these per image
 
 		uint32_t modelUniformAlignment;
-		UboModel* modelTransferSpace;
+		UboModel* modelTransferSpace = nullptr;
 
 		std::vector<VkBuffer> vpUniformBuffer;
 		std::vector<VkDeviceMemory> vpUniformBufferMemory;

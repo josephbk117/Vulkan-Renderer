@@ -441,7 +441,7 @@ namespace Utilities
 			texInfo.channelCount = channels;
 			texInfo.height = height;
 			texInfo.width = width;
-			texInfo.imageSize = static_cast<VkDeviceSize>(width * height * 4);
+			texInfo.imageSize = static_cast<VkDeviceSize>(width) * height * 4;
 
 			return image;
 		}
