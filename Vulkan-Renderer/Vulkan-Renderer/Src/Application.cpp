@@ -6,7 +6,7 @@ Application::Application()
 {
 	Benchmark::Get().BeginSession("Profile");
 	PROFILE_FUNCTION();
-	appWindow.Initwindow({ 1200, 800, "Vulkan Test Window" });
+	appWindow.Initwindow({ 1920, 1080, "Vulkan Test Window" });
 }
 
 void Application::Run()
