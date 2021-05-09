@@ -46,15 +46,23 @@ namespace Renderer
 		std::vector<VkFramebuffer> swapchainFrameBuffers;
 		std::vector<VkCommandBuffer> commandBuffers;
 
+		VkCommandPool gfxCommandPool;
+
 		VkImage depthBufferImage;
 		VkDeviceMemory depthBufferImageMemory;
 		VkImageView depthBufferImageView;
 
-		VkDebugUtilsMessengerEXT debugMessenger;
-		VkCommandPool gfxCommandPool;
+		// Assets
+		std::vector<TextureHandle> textureHandles;
+
+		// Synchronization
 		std::vector<VkSemaphore> imageAvailable;
 		std::vector<VkSemaphore> renderFinished;
 		std::vector<VkFence> drawFences;
+
+		// Misc
+		VkDebugUtilsMessengerEXT debugMessenger;
+
 
 		void CreateInstance();
 		void CreateValidationDebugMessenger();
@@ -70,6 +78,7 @@ namespace Renderer
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateSynchronization();
+		int32_t CreateTexture(const std::string fileName);
 		void RecordCommands(uint32_t currentImageIndex);
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
@@ -81,7 +90,7 @@ namespace Renderer
 		VkPresentModeKHR GetSuitablePresentationMode(const std::vector<VkPresentModeKHR>& presentationMode) const;
 		VkExtent2D GetSuitableSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const;
 		VkFormat GetSuitableFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags) const;
-		VkImage CreateImage(const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory);
+		VkImage CreateImage(const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory) const;
 		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 

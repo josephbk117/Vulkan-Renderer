@@ -30,6 +30,8 @@ namespace Renderer
 			CreateCommandPool();
 			CreateCommandBuffers();
 
+			int32_t texture1 = CreateTexture("testTexture.jpg");
+
 			renderPipelinePtr->SetPerspectiveProjectionMatrix(glm::radians(60.0f), (float)swapChainExtent.width / swapChainExtent.height, 0.1f, 100.0f);
 			renderPipelinePtr->SetViewMatrixFromLookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f), GLOBAL_UP);
 			renderPipelinePtr->SetModelMatrix(glm::mat4(1.0f));
@@ -137,6 +139,12 @@ namespace Renderer
 	{
 		PROFILE_FUNCTION();
 		vkDeviceWaitIdle(deviceHandle.logicalDevice);
+
+		for (size_t i = 0; i < textureHandles.size(); i++)
+		{
+			vkDestroyImage(deviceHandle.logicalDevice, textureHandles[i].image, nullptr);
+			vkFreeMemory(deviceHandle.logicalDevice, textureHandles[i].memory, nullptr);
+		}
 
 		vkDestroyImageView(deviceHandle.logicalDevice, depthBufferImageView, nullptr);
 		vkDestroyImage(deviceHandle.logicalDevice, depthBufferImage, nullptr);
@@ -661,6 +669,86 @@ namespace Renderer
 		}
 	}
 
+	int32_t VulkanRenderer::CreateTexture(const std::string fileName)
+	{
+		TextureInfo texInfo;
+		stbi_uc* imageData = Utils::LoadTextureFile(fileName, texInfo);
+
+		VkBuffer imageStagingBuffer;
+		VkDeviceMemory imageStagingBufferMemory;
+
+		CreateBufferInfo bufferInfo;
+		bufferInfo.physicalDevice = deviceHandle.physicalDevice;
+		bufferInfo.device = deviceHandle.logicalDevice;
+		bufferInfo.bufferSize = texInfo.imageSize;
+		bufferInfo.bufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		bufferInfo.memoryPropFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		bufferInfo.buffer = &imageStagingBuffer;
+		bufferInfo.bufferMemory = &imageStagingBufferMemory;
+
+		Utils::CreateBuffer(bufferInfo);
+
+		void* data = nullptr;
+		vkMapMemory(deviceHandle.logicalDevice, imageStagingBufferMemory, 0, texInfo.imageSize, 0, &data);
+		memcpy(data, imageData, static_cast<size_t>(texInfo.imageSize));
+		vkUnmapMemory(deviceHandle.logicalDevice, imageStagingBufferMemory);
+
+		stbi_image_free(imageData);
+
+		// Create image to hold final texture
+		VkImage texImage;
+		VkDeviceMemory texImageMemory;
+
+		CreateImageInfo createImageInfo;
+		createImageInfo.width = texInfo.width;
+		createImageInfo.height = texInfo.height;
+		createImageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		createImageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		createImageInfo.useFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		createImageInfo.propFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		texImage = CreateImage(createImageInfo, &texImageMemory);
+
+		// Transition image to be destination for copy operation
+
+		TransitionImageLayoutInfo transitionInfo;
+		transitionInfo.device = deviceHandle.logicalDevice;
+		transitionInfo.cmdPool = gfxCommandPool;
+		transitionInfo.queue = graphicsQueue;
+		transitionInfo.image = texImage;
+		transitionInfo.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		transitionInfo.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+		Utils::TransitionImageLayout(transitionInfo);
+
+		// Copy data to image
+
+		CopyImageBufferInfo cpyImgBufInfo;
+		cpyImgBufInfo.device = deviceHandle.logicalDevice;
+		cpyImgBufInfo.width = texInfo.width;
+		cpyImgBufInfo.height = texInfo.height;
+		cpyImgBufInfo.transferQueue = graphicsQueue;
+		cpyImgBufInfo.transCommandPool = gfxCommandPool;
+		cpyImgBufInfo.srcBuffer = imageStagingBuffer;
+		cpyImgBufInfo.dstImage = texImage;
+
+		Utils::CopyImageBuffer(cpyImgBufInfo);
+
+		// Transition image to be shader readable
+
+		transitionInfo.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		transitionInfo.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		Utils::TransitionImageLayout(transitionInfo);
+
+		textureHandles.push_back({ texImage, texImageMemory });
+
+		vkDestroyBuffer(deviceHandle.logicalDevice, imageStagingBuffer, nullptr);
+		vkFreeMemory(deviceHandle.logicalDevice, imageStagingBufferMemory, nullptr);
+
+		return static_cast<int32_t>(textureHandles.size()) - 1;
+	}
+
 	void VulkanRenderer::RecordCommands(uint32_t currentImageIndex)
 	{
 		PROFILE_FUNCTION();
@@ -976,7 +1064,7 @@ namespace Renderer
 		throw std::runtime_error("Failed to find a matching format!");
 	}
 
-	VkImage VulkanRenderer::CreateImage(const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory)
+	VkImage VulkanRenderer::CreateImage(const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory) const
 	{
 		VkImageCreateInfo imageCreateInfo = {};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
