@@ -14,7 +14,11 @@ constexpr auto TEXTURE_PATH = "Res\\Textures\\";
 constexpr uint32_t MAX_OBJECTS = 10;
 
 const std::vector<const char*> DEVICE_EXTENSIONS = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+#if VULKAN_SDK_INSTALLED
 const std::vector<const char*> VALIDATION_LAYERS = { "VK_LAYER_KHRONOS_validation" };
+#else
+const std::vector<const char*> VALIDATION_LAYERS;
+#endif
 
 constexpr int MAX_FRAME_DRAWS = 2;
 
