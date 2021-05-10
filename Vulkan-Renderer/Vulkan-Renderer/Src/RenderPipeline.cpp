@@ -498,6 +498,8 @@ void Renderer::RenderPipeline::CreateDescriptorSets()
 
 void Renderer::RenderPipeline::CreatePushConstantRange()
 {
+	PROFILE_FUNCTION();
+
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	pushConstantRange.offset = 0;
 	pushConstantRange.size = sizeof(uint32_t);

@@ -249,6 +249,8 @@ namespace Utilities
 
 		static std::vector<char> ReadFile(const std::string& filePath)
 		{
+			PROFILE_FUNCTION();
+
 			std::ifstream file(filePath, std::ios::ate | std::ios::binary);
 			if (!file.is_open())
 			{
@@ -267,6 +269,8 @@ namespace Utilities
 
 		static uint32_t FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t allowedTypes, VkMemoryPropertyFlags memPropFlags)
 		{
+			PROFILE_FUNCTION();
+
 			VkPhysicalDeviceMemoryProperties memProps;
 			vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProps);
 
@@ -283,6 +287,8 @@ namespace Utilities
 
 		static void CreateBuffer(const CreateBufferInfo& bufferInfo)
 		{
+			PROFILE_FUNCTION();
+
 			VkBufferCreateInfo createInfo = {};
 			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			createInfo.size = bufferInfo.bufferSize;
@@ -316,6 +322,8 @@ namespace Utilities
 
 		static void CopyBuffer(const CopyBufferInfo& copyBufferInfo)
 		{
+			PROFILE_FUNCTION();
+
 			VkCommandBuffer transferCommandBuffer = BeginCmdBuffer(copyBufferInfo.device, copyBufferInfo.transCommandPool);
 
 			VkBufferCopy bufferCopyRegion = {};
@@ -330,6 +338,8 @@ namespace Utilities
 
 		static void CopyImageBuffer(const CopyImageBufferInfo& copyImgBufferInfo)
 		{
+			PROFILE_FUNCTION();
+
 			VkCommandBuffer transferCommandBuffer = BeginCmdBuffer(copyImgBufferInfo.device, copyImgBufferInfo.transCommandPool);
 
 			VkBufferImageCopy imageRegion = {};
@@ -340,7 +350,7 @@ namespace Utilities
 			imageRegion.imageSubresource.mipLevel = 0;
 			imageRegion.imageSubresource.baseArrayLayer = 0;
 			imageRegion.imageSubresource.layerCount = 1;
-			imageRegion.imageOffset = {0, 0, 0};
+			imageRegion.imageOffset = { 0, 0, 0 };
 			imageRegion.imageExtent = { copyImgBufferInfo.width, copyImgBufferInfo.height, 1 };
 
 			vkCmdCopyBufferToImage(transferCommandBuffer, copyImgBufferInfo.srcBuffer, copyImgBufferInfo.dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageRegion);
@@ -350,6 +360,8 @@ namespace Utilities
 
 		static VkCommandBuffer BeginCmdBuffer(VkDevice device, VkCommandPool cmdPool)
 		{
+			PROFILE_FUNCTION();
+
 			VkCommandBuffer cmdBuffer;
 
 			VkCommandBufferAllocateInfo allocateInfo = {};
@@ -371,6 +383,8 @@ namespace Utilities
 
 		static void EndAndSubmitCmdBuffer(VkDevice device, VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer)
 		{
+			PROFILE_FUNCTION();
+
 			vkEndCommandBuffer(cmdBuffer);
 
 			VkSubmitInfo submitInfo = {};
@@ -386,6 +400,8 @@ namespace Utilities
 
 		static void TransitionImageLayout(const TransitionImageLayoutInfo& transitionImgLytInfo)
 		{
+			PROFILE_FUNCTION();
+
 			VkCommandBuffer transferCommandBuffer = BeginCmdBuffer(transitionImgLytInfo.device, transitionImgLytInfo.cmdPool);
 
 			VkImageMemoryBarrier imgMemoryBarrier = {};
@@ -412,7 +428,7 @@ namespace Utilities
 				srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 				dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			}
-			else if(transitionImgLytInfo.oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && transitionImgLytInfo.newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+			else if (transitionImgLytInfo.oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && transitionImgLytInfo.newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			{
 				imgMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 				imgMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -428,6 +444,8 @@ namespace Utilities
 
 		static stbi_uc* LoadTextureFile(const std::string& fileName, TextureInfo& texInfo)
 		{
+			PROFILE_FUNCTION();
+
 			const std::string fileLoc = TEXTURE_PATH + fileName;
 			int width, height, channels;
 

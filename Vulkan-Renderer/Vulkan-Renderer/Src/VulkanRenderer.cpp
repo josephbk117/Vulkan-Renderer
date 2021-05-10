@@ -91,11 +91,15 @@ namespace Renderer
 	{
 		PROFILE_FUNCTION();
 
-		vkWaitForFences(deviceHandle.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-		vkResetFences(deviceHandle.logicalDevice, 1, &drawFences[currentFrame]);
-
 		uint32_t imageIndex = 0;
-		vkAcquireNextImageKHR(deviceHandle.logicalDevice, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
+		{
+			PROFILE_SCOPE("Wait, Reset Fences & Accquire Image");
+
+			vkWaitForFences(deviceHandle.logicalDevice, 1, &drawFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+			vkResetFences(deviceHandle.logicalDevice, 1, &drawFences[currentFrame]);
+
+			vkAcquireNextImageKHR(deviceHandle.logicalDevice, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailable[currentFrame], VK_NULL_HANDLE, &imageIndex);
+		}
 
 		RecordCommands(imageIndex);
 
@@ -113,25 +117,29 @@ namespace Renderer
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submitInfo.pWaitDstStageMask = waitStages;
 
-		VkResult vkResult = vkQueueSubmit(graphicsQueue, 1, &submitInfo, drawFences[currentFrame]);
-		if (vkResult != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to submit command buffer to queue");
-		}
+			PROFILE_SCOPE("Queue Submit & Present");
 
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &renderFinished[currentFrame];
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = &swapChain;
-		presentInfo.pImageIndices = &imageIndex;
+			VkResult vkResult = vkQueueSubmit(graphicsQueue, 1, &submitInfo, drawFences[currentFrame]);
+			if (vkResult != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to submit command buffer to queue");
+			}
 
-		vkResult = vkQueuePresentKHR(presentationQueue, &presentInfo);
+			VkPresentInfoKHR presentInfo = {};
+			presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+			presentInfo.waitSemaphoreCount = 1;
+			presentInfo.pWaitSemaphores = &renderFinished[currentFrame];
+			presentInfo.swapchainCount = 1;
+			presentInfo.pSwapchains = &swapChain;
+			presentInfo.pImageIndices = &imageIndex;
 
-		if (vkResult != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to present to queue");
+			vkResult = vkQueuePresentKHR(presentationQueue, &presentInfo);
+
+			if (vkResult != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to present to queue");
+			}
 		}
 
 		currentFrame = (currentFrame + 1) % MAX_FRAME_DRAWS;
@@ -563,6 +571,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateDepthBufferImage()
 	{
+		PROFILE_FUNCTION();
+
 		VkFormat depthFormat = GetSuitableFormat(
 			{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
 			VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -677,6 +687,8 @@ namespace Renderer
 
 	void VulkanRenderer::CreateTextureSampler()
 	{
+		PROFILE_FUNCTION();
+
 		VkSamplerCreateInfo samplerCreateInfo = {};
 		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
@@ -703,6 +715,8 @@ namespace Renderer
 
 	int32_t VulkanRenderer::CreateTexture(const std::string& fileName)
 	{
+		PROFILE_FUNCTION();
+
 		int32_t textureImgLoc = CreateTextureImage(fileName);
 
 		VkImageView imgView = CreateImageView(textureHandles[textureImgLoc].image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -715,6 +729,8 @@ namespace Renderer
 
 	int32_t VulkanRenderer::CreateTextureImage(const std::string& fileName)
 	{
+		PROFILE_FUNCTION();
+
 		TextureInfo texInfo;
 		stbi_uc* imageData = Utils::LoadTextureFile(fileName, texInfo);
 
@@ -1097,6 +1113,8 @@ namespace Renderer
 
 	VkFormat VulkanRenderer::GetSuitableFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags) const
 	{
+		PROFILE_FUNCTION();
+
 		for (VkFormat format : formats)
 		{
 			VkFormatProperties props;
@@ -1117,6 +1135,8 @@ namespace Renderer
 
 	VkImage VulkanRenderer::CreateImage(const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory) const
 	{
+		PROFILE_FUNCTION();
+
 		VkImageCreateInfo imageCreateInfo = {};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
