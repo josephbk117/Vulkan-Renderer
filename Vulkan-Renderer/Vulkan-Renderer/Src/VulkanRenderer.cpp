@@ -182,7 +182,7 @@ namespace Renderer
 			vkDestroyFramebuffer(deviceHandle.logicalDevice, frameBuffer, nullptr);
 		}
 
-		for (auto image : swapChainImages)
+		for (const auto& image : swapChainImages)
 		{
 			vkDestroyImageView(deviceHandle.logicalDevice, image.imageView, nullptr);
 		}
@@ -503,7 +503,7 @@ namespace Renderer
 		subpass.pColorAttachments = &colorAttachmentReference;
 		subpass.pDepthStencilAttachment = &depthAttachmentReference;
 
-		std::array<VkSubpassDependency, 2> subpassDependencies;
+		std::array<VkSubpassDependency, 2> subpassDependencies{};
 		subpassDependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 		subpassDependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 		subpassDependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
@@ -734,10 +734,10 @@ namespace Renderer
 		TextureInfo texInfo;
 		stbi_uc* imageData = Utils::LoadTextureFile(fileName, texInfo);
 
-		VkBuffer imageStagingBuffer;
-		VkDeviceMemory imageStagingBufferMemory;
+		VkBuffer imageStagingBuffer = nullptr;
+		VkDeviceMemory imageStagingBufferMemory = nullptr;
 
-		CreateBufferInfo bufferInfo;
+		CreateBufferInfo bufferInfo{};
 		bufferInfo.physicalDevice = deviceHandle.physicalDevice;
 		bufferInfo.device = deviceHandle.logicalDevice;
 		bufferInfo.bufferSize = texInfo.imageSize;
@@ -759,7 +759,7 @@ namespace Renderer
 		VkImage texImage;
 		VkDeviceMemory texImageMemory;
 
-		CreateImageInfo createImageInfo;
+		CreateImageInfo createImageInfo{};
 		createImageInfo.width = texInfo.width;
 		createImageInfo.height = texInfo.height;
 		createImageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -771,7 +771,7 @@ namespace Renderer
 
 		// Transition image to be destination for copy operation
 
-		TransitionImageLayoutInfo transitionInfo;
+		TransitionImageLayoutInfo transitionInfo{};
 		transitionInfo.device = deviceHandle.logicalDevice;
 		transitionInfo.cmdPool = gfxCommandPool;
 		transitionInfo.queue = graphicsQueue;
@@ -783,7 +783,7 @@ namespace Renderer
 
 		// Copy data to image
 
-		CopyImageBufferInfo cpyImgBufInfo;
+		CopyImageBufferInfo cpyImgBufInfo{};
 		cpyImgBufInfo.device = deviceHandle.logicalDevice;
 		cpyImgBufInfo.width = texInfo.width;
 		cpyImgBufInfo.height = texInfo.height;
