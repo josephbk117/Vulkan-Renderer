@@ -14,6 +14,8 @@ namespace RendererCookAndBuildTool
             bool atleastOneShaderFailed = false;
             Console.WriteLine("GLSLC SpirV compiler process started");
 
+            Directory.CreateDirectory(Path.GetFullPath(PathInfo.CompiledShadersFolder));
+
             foreach (string shaderFile in shaderFiles)
             {
                 string inShaderFile = "\"" + shaderFile + "\"";
