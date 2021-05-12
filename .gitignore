@@ -349,5 +349,5 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 Vulkan-Renderer/Vulkan-Renderer/results.json
-Vulkan-Renderer/Vulkan-Renderer/Vulkan-Renderer/Res/CompiledShaders/*
+Vulkan-Renderer/Vulkan-Renderer/Res/CompiledShaders/*
 
