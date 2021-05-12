@@ -32,9 +32,12 @@ namespace RendererCookAndBuildTool
             }
 
             Directory.CreateDirectory(Path.GetFullPath(PathInfo.BinOutputPathDebug));
+            Directory.CreateDirectory(Path.GetFullPath(PathInfo.BinOutputPathRelease));
             File.Copy(Path.GetFullPath(PathInfo.DllIGlfwSrcPath), Path.GetFullPath(PathInfo.DllIGlfwDstPathDebug), true);
+            File.Copy(Path.GetFullPath(PathInfo.DllIGlfwSrcPath), Path.GetFullPath(PathInfo.DllIGlfwDstPathRelease), true);
 
-            string resFolderOutputPath = Path.GetFullPath(PathInfo.ResFolderOutputPathDebug);
+            string resFolderOutputPathDebug = Path.GetFullPath(PathInfo.ResFolderOutputPathDebug);
+            string resFolderOutputPathRelease = Path.GetFullPath(PathInfo.ResFolderOutputPathRelease);
 
             List<string> foldersToAddToOutputRes = new List<string>();
             foldersToAddToOutputRes.Add(PathInfo.CompiledShadersFolder);
@@ -50,10 +53,14 @@ namespace RendererCookAndBuildTool
                     {
                         string fileName = Path.GetFileName(file);
                         string outputFolderName = Path.GetFileName(Path.GetDirectoryName(file));
-                        string outputFolderPath = resFolderOutputPath + "\\" + outputFolderName;
-                        string destFile = Path.Combine(outputFolderPath, fileName);
-                        Directory.CreateDirectory(outputFolderPath);
-                        File.Copy(file, destFile, true);
+                        string outputFolderPathDebug = resFolderOutputPathDebug + "\\" + outputFolderName;
+                        string outputFolderPathRelease = resFolderOutputPathRelease + "\\" + outputFolderName;
+                        string destFileDebug = Path.Combine(outputFolderPathDebug, fileName);
+                        string destFileRelease = Path.Combine(outputFolderPathRelease, fileName);
+                        Directory.CreateDirectory(outputFolderPathDebug);
+                        Directory.CreateDirectory(outputFolderPathRelease);
+                        File.Copy(file, destFileDebug, true);
+                        File.Copy(file, destFileRelease, true);
                     }
                 }
             }
