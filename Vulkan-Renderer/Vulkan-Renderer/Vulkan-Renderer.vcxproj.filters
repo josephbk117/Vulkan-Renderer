@@ -91,9 +91,6 @@
     <None Include="Res\glslc.exe">
       <Filter>Misc</Filter>
     </None>
-    <None Include="Res\CompileShaderswGLSLC.bat">
-      <Filter>Misc</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Res\Textures\testTexture.jpg">

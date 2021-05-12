@@ -128,8 +128,7 @@
       <AdditionalDependencies>vulkan-1.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>"$(SolutionDir)RendererCookAndBuildTool\bin\RendererCookAndBuildTool.exe"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -160,8 +159,7 @@
       <AdditionalDependencies>vulkan-1.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>"$(SolutionDir)RendererCookAndBuildTool\bin\RendererCookAndBuildTool.exe"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -188,7 +186,6 @@
   <ItemGroup>
     <None Include="Res\CompiledShaders\simple_shader.frag.spv" />
     <None Include="Res\CompiledShaders\simple_shader.vert.spv" />
-    <None Include="Res\CompileShaderswGLSLC.bat" />
     <None Include="Res\glslc.exe" />
     <None Include="Res\Shaders\simple_shader.frag" />
     <None Include="Res\Shaders\simple_shader.vert" />
