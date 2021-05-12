@@ -7,7 +7,7 @@ namespace RendererCookAndBuildTool
 {
     class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             string[] shaderFiles = Directory.GetFiles(Path.GetFullPath(PathInfo.ShadersFolder));
 
@@ -25,10 +25,10 @@ namespace RendererCookAndBuildTool
             }
 
             // Skip copying to build folder
-            if(atleastOneShaderFailed)
+            if (atleastOneShaderFailed)
             {
                 Console.ReadLine();
-                return;
+                return -1;
             }
 
             Directory.CreateDirectory(Path.GetFullPath(PathInfo.BinOutputPathDebug));
@@ -64,6 +64,8 @@ namespace RendererCookAndBuildTool
                     }
                 }
             }
+
+            return 0;
         }
 
         static public bool ExecuteCommand(string exeDir, string args)
@@ -86,12 +88,10 @@ namespace RendererCookAndBuildTool
                     process.Start();
                     process.WaitForExit();
 
-                    Console.WriteLine("Info Output : " + process.StandardOutput.ReadToEnd());
-
                     string errorStr = process.StandardError.ReadToEnd();
-                    Console.WriteLine("Error Output : " + errorStr);
+                    Console.WriteLine("Output Details : " + errorStr);
 
-                    if (errorStr.Length > 0)
+                    if (errorStr.Length > 1)
                     {
                         return false;
                     }

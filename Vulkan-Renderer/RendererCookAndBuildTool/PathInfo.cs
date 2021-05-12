@@ -8,7 +8,7 @@ namespace RendererCookAndBuildTool
 {
     static class PathInfo
     {
-        public static readonly string SolutionDirectory = "..\\..\\..";
+        public static readonly string SolutionDirectory = "..";
         public static readonly string VulkanRendererProjectPath = SolutionDirectory + "\\Vulkan-Renderer";
         public static readonly string ResourceFolder = VulkanRendererProjectPath + "\\Res";
         public static readonly string CompiledShadersFolder = ResourceFolder + "\\CompiledShaders";

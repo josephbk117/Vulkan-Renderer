@@ -128,8 +128,7 @@
       <AdditionalDependencies>vulkan-1.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>"$(SolutionDir)RendererCookAndBuildTool\bin\RendererCookAndBuildTool.exe"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -160,8 +159,7 @@
       <AdditionalDependencies>vulkan-1.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>"$(SolutionDir)RendererCookAndBuildTool\bin\RendererCookAndBuildTool.exe"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
