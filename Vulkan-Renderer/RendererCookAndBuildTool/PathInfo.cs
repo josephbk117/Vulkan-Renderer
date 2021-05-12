@@ -15,7 +15,7 @@ namespace RendererCookAndBuildTool
         public static readonly string ShadersFolder = ResourceFolder + "\\Shaders";
         public static readonly string TexturesFolder = ResourceFolder + "\\Textures";
 
-        public static readonly string CompileShadersToSprirVBat;
+        public static readonly string CompileShadersToSprirVGlslc = ResourceFolder + "\\glslc.exe";
 
         public static readonly string BinOutputPathDebug = SolutionDirectory + "\\x64\\Debug\\";
         public static readonly string BinOutputPathRelease = SolutionDirectory + "\\x64\\Release\\";
