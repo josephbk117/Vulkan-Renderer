@@ -186,7 +186,6 @@
   <ItemGroup>
     <None Include="Res\CompiledShaders\simple_shader.frag.spv" />
     <None Include="Res\CompiledShaders\simple_shader.vert.spv" />
-    <None Include="Res\CompileShaderswGLSLC.bat" />
     <None Include="Res\glslc.exe" />
     <None Include="Res\Shaders\simple_shader.frag" />
     <None Include="Res\Shaders\simple_shader.vert" />
