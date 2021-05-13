@@ -22,8 +22,12 @@ namespace RendererCookAndBuildTool
         public static readonly string ResFolderOutputPathDebug = BinOutputPathDebug + "\\Res";
         public static readonly string ResFolderOutputPathRelease = BinOutputPathRelease + "\\Res";
 
-        public static readonly string DllIGlfwSrcPath = SolutionDirectory + "\\Libs\\glfw3.dll";
+        public static readonly string DllGlfwSrcPath = SolutionDirectory + "\\Libs\\glfw3.dll";
+        public static readonly string DllAssimpSrcPath = SolutionDirectory + "\\Libs\\assimp-vc142-mt.dll";
+
         public static readonly string DllIGlfwDstPathDebug = BinOutputPathDebug + "\\glfw3.dll";
         public static readonly string DllIGlfwDstPathRelease = BinOutputPathRelease + "\\glfw3.dll";
+        public static readonly string DllAssimpDstPathDebug = BinOutputPathDebug + "\\assimp-vc142-mt.dll";
+        public static readonly string DllAssimpDstPathRelease = BinOutputPathRelease + "\\assimp-vc142-mt.dll";
     }
 }

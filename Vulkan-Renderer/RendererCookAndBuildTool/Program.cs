@@ -35,8 +35,12 @@ namespace RendererCookAndBuildTool
 
             Directory.CreateDirectory(Path.GetFullPath(PathInfo.BinOutputPathDebug));
             Directory.CreateDirectory(Path.GetFullPath(PathInfo.BinOutputPathRelease));
-            File.Copy(Path.GetFullPath(PathInfo.DllIGlfwSrcPath), Path.GetFullPath(PathInfo.DllIGlfwDstPathDebug), true);
-            File.Copy(Path.GetFullPath(PathInfo.DllIGlfwSrcPath), Path.GetFullPath(PathInfo.DllIGlfwDstPathRelease), true);
+
+            File.Copy(Path.GetFullPath(PathInfo.DllGlfwSrcPath), Path.GetFullPath(PathInfo.DllIGlfwDstPathDebug), true);
+            File.Copy(Path.GetFullPath(PathInfo.DllGlfwSrcPath), Path.GetFullPath(PathInfo.DllIGlfwDstPathRelease), true);
+
+            File.Copy(Path.GetFullPath(PathInfo.DllAssimpSrcPath), Path.GetFullPath(PathInfo.DllAssimpDstPathDebug), true);
+            File.Copy(Path.GetFullPath(PathInfo.DllAssimpSrcPath), Path.GetFullPath(PathInfo.DllAssimpDstPathRelease), true);
 
             string resFolderOutputPathDebug = Path.GetFullPath(PathInfo.ResFolderOutputPathDebug);
             string resFolderOutputPathRelease = Path.GetFullPath(PathInfo.ResFolderOutputPathRelease);
