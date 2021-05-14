@@ -95,7 +95,7 @@ namespace Renderer
 
 		RecordCommands(imageIndex);
 
-		renderPipelinePtr->UpdateUniformBuffers(imageIndex, meshList);
+		renderPipelinePtr->UpdateUniformBuffers(imageIndex, modelList);
 
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -159,11 +159,6 @@ namespace Renderer
 		vkDestroyImageView(deviceHandle.logicalDevice, depthBufferImageView, nullptr);
 		vkDestroyImage(deviceHandle.logicalDevice, depthBufferImage, nullptr);
 		vkFreeMemory(deviceHandle.logicalDevice, depthBufferImageMemory, nullptr);
-
-		for (size_t i = 0; i < meshList.size(); i++)
-		{
-			meshList[i].DestroyBuffers();
-		}
 
 		for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
 		{

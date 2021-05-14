@@ -16,7 +16,7 @@ size_t Model::GetMeshCount() const
 	return meshList.size();
 }
 
-Mesh* Model::GetMesh(size_t index)
+const Mesh* Model::GetMesh(size_t index) const
 {
 	if (index >= meshList.size())
 	{

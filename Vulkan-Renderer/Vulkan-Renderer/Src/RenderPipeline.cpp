@@ -238,7 +238,7 @@ void Renderer::RenderPipeline::SetModelMatrix(const glm::mat4& mat)
 
 }
 
-void Renderer::RenderPipeline::UpdateUniformBuffers(uint32_t imageIndex, const std::vector<Mesh>& meshList)
+void Renderer::RenderPipeline::UpdateUniformBuffers(uint32_t imageIndex, const std::vector<Model>& modelList)
 {
 	PROFILE_FUNCTION();
 
@@ -249,14 +249,19 @@ void Renderer::RenderPipeline::UpdateUniformBuffers(uint32_t imageIndex, const s
 	vkUnmapMemory(pipelineCreateInfo.device.logicalDevice, vpUniformBufferMemory[imageIndex]);
 
 	// Copy Model data
-	for (size_t i = 0; i < meshList.size(); i++)
+	size_t totalMeshCount = 0;
+	for (size_t i = 0; i < modelList.size(); i++)
 	{
-		UboModel* thisModel = (UboModel*)((uint64_t)modelTransferSpace + (i * modelUniformAlignment));
-		*thisModel = meshList[i].GetModel();
+		totalMeshCount += modelList[i].GetMeshCount();
+		for (size_t j = 0; j < modelList[i].GetMeshCount(); j++)
+		{
+			UboModel* thisModel = (UboModel*)((uint64_t)modelTransferSpace + (i * modelUniformAlignment));
+			*thisModel = modelList[i].GetMesh(j)->GetModel();
+		}
 	}
 
-	vkMapMemory(pipelineCreateInfo.device.logicalDevice, modelUniformDynamicBufferMemory[imageIndex], 0, modelUniformAlignment * meshList.size(), 0, &data);
-	memcpy(data, modelTransferSpace, modelUniformAlignment * meshList.size());
+	vkMapMemory(pipelineCreateInfo.device.logicalDevice, modelUniformDynamicBufferMemory[imageIndex], 0, modelUniformAlignment * totalMeshCount, 0, &data);
+	memcpy(data, modelTransferSpace, modelUniformAlignment * totalMeshCount);
 	vkUnmapMemory(pipelineCreateInfo.device.logicalDevice, modelUniformDynamicBufferMemory[imageIndex]);
 }
 

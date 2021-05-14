@@ -28,7 +28,7 @@ namespace Renderer
 		void SetPerspectiveProjectionMatrix(float fov, float aspectRatio, float nearPlane, float farPlane);
 		void SetViewMatrixFromLookAt(const glm::vec3& location, const glm::vec3& lookAt, const glm::vec3& upVec);
 		void SetModelMatrix(const glm::mat4& mat);
-		void UpdateUniformBuffers(uint32_t imageIndex, const std::vector<Mesh>& meshList);
+		void UpdateUniformBuffers(uint32_t imageIndex, const std::vector<Model>& modelList);
 		uint32_t GetModelUniformAlignment() const;
 		uint32_t CreateTextureDescriptor(VkImageView textureImage, VkSampler textureSampler);
 

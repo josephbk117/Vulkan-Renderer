@@ -28,7 +28,7 @@ namespace Renderer
 		int currentFrame = 0;
 
 		//Scene Objects
-		std::vector<Mesh> meshList;
+		std::vector<Model> modelList;
 
 		VkInstance instance;
 		VkQueue graphicsQueue;
@@ -57,7 +57,6 @@ namespace Renderer
 		// Assets
 		std::vector<TextureHandle> textureHandles;
 		std::vector<VkImageView> textureImgViews;
-		std::vector<Model> modelList;
 
 		// Synchronization
 		std::vector<VkSemaphore> imageAvailable;

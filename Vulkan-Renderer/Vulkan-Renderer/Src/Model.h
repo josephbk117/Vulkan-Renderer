@@ -9,7 +9,7 @@ public:
 	Model();
 	Model(const std::vector<Mesh>& meshList);
 	size_t GetMeshCount() const;
-	Mesh* GetMesh(size_t index);
+	const Mesh* GetMesh(size_t index)const;
 	glm::mat4& GetModelMatrix();
 	void SetModelMatrix(const glm::mat4& modelMatrix);
 	void DestroyModel();
