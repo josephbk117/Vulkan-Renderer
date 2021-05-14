@@ -17,6 +17,7 @@ namespace Renderer
 	{
 	public:
 		bool Init(GLFWwindow* window);
+		void CreateModel(const std::string& fileName, float scaleFactor = 1.0f);
 		void Update();
 		void Draw();
 		void CleanUp();
@@ -84,7 +85,6 @@ namespace Renderer
 		void CreateTextureSampler();
 		int32_t CreateTexture(const std::string& fileName);
 		int32_t CreateTextureImage(const std::string& fileName);
-		void CreateModel(const std::string& fileName, float scaleFactor = 1.0f);
 		void RecordCommands(uint32_t currentImageIndex);
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;

@@ -42,8 +42,6 @@ namespace Renderer
 			renderPipelinePtr->SetViewMatrixFromLookAt(glm::vec3(0.0f, 0.0f, 200.0f), glm::vec3(0.0f), GLOBAL_UP);
 			renderPipelinePtr->SetModelMatrix(glm::mat4(1.0f));
 
-			CreateModel("11805_airplane_v2_L2.obj", 0.1f);
-
 		}
 		catch (const std::runtime_error& e)
 		{
