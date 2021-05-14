@@ -163,6 +163,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Model.cpp" />
     <ClCompile Include="Src\Mesh.cpp" />
     <ClCompile Include="Src\MemoryPool.cpp" />
     <ClCompile Include="Src\RenderPipeline.cpp" />
@@ -173,6 +174,7 @@
     <ClCompile Include="Src\VulkanRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Model.h" />
     <ClInclude Include="Src\Mesh.h" />
     <ClInclude Include="Src\MemoryPool.h" />
     <ClInclude Include="Src\ConstantsAndDefines.h" />

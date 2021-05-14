@@ -6,6 +6,7 @@ constexpr auto COMPILED_SHADER_PATH = "Res\\CompiledShaders\\";
 constexpr auto COMPILED_SHADER_SUFFIX = ".spv";
 constexpr auto SHADER_PATH = "Res\\Shaders\\";
 constexpr auto TEXTURE_PATH = "Res\\Textures\\";
+constexpr auto MODELS_PATH = "Res\\Models\\";
 #include <vector>
 #include <GLM/glm.hpp>
 //#include <stb/stb_image.h>

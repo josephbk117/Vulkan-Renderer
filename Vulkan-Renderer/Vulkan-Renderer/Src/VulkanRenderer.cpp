@@ -7,6 +7,9 @@
 #include "Utils.h"
 #include "RenderPipeline.h"
 #include <array>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 namespace Renderer
 {
@@ -34,12 +37,12 @@ namespace Renderer
 
 			int32_t texture1Id = CreateTexture("testTexture.jpg");
 
-			renderPipelinePtr->SetPerspectiveProjectionMatrix(glm::radians(60.0f), (float)swapChainExtent.width / swapChainExtent.height, 0.1f, 100.0f);
-			renderPipelinePtr->SetViewMatrixFromLookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f), GLOBAL_UP);
+			renderPipelinePtr->SetPerspectiveProjectionMatrix(glm::radians(60.0f), (float)swapChainExtent.width / swapChainExtent.height, 0.1f, 1000.0f);
+			renderPipelinePtr->SetViewMatrixFromLookAt(glm::vec3(0.0f, 0.0f, 200.0f), glm::vec3(0.0f), GLOBAL_UP);
 			renderPipelinePtr->SetModelMatrix(glm::mat4(1.0f));
 
-			//Create meshes
-			std::vector<Vertex> meshVertices =
+			//Create models
+			/*std::vector<Vertex> meshVertices =
 			{
 			{{-0.25, 0.1, 0.0}, {1,0,0}, {0,0}},
 			{{0.25, 0.1, 0.0}, {0,1,0}, {0, 1}},
@@ -49,10 +52,12 @@ namespace Renderer
 
 			std::vector<uint32_t> meshIndices = { 2, 1, 0, 0, 3, 2 };
 
-			for (size_t i = 0; i < MAX_OBJECTS; i++)
+			for (size_t i = 0; i < 4; i++)
 			{
 				meshList.emplace_back(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices, texture1Id);
-			}
+			}*/
+
+			CreateModel("11805_airplane_v2_L2.obj", 0.1f);
 
 		}
 		catch (const std::runtime_error& e)
@@ -78,11 +83,11 @@ namespace Renderer
 
 		angle += deltaTime;
 
-		for (size_t i = 0; i < MAX_OBJECTS; i++)
+		/*for (size_t i = 0; i < 4; i++)
 		{
 			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, glm::sin((i + 1) * angle * 0.5f)));
 			meshList[i].SetModel(glm::rotate(translation, glm::radians(angle * (i + 1) * 10.0f), GLOBAL_FORWARD));
-		}
+		}*/
 
 		lastTime = now;
 	}
@@ -149,6 +154,11 @@ namespace Renderer
 	{
 		PROFILE_FUNCTION();
 		vkDeviceWaitIdle(deviceHandle.logicalDevice);
+
+		for (size_t i = 0; i < modelList.size(); i++)
+		{
+			modelList[i].DestroyModel();
+		}
 
 		vkDestroySampler(deviceHandle.logicalDevice, textureSampler, nullptr);
 
@@ -809,6 +819,38 @@ namespace Renderer
 		return static_cast<int32_t>(textureHandles.size()) - 1;
 	}
 
+	void VulkanRenderer::CreateModel(const std::string& fileName, float scaleFactor /*= 1.0f*/)
+	{
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(MODELS_PATH + fileName, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+
+		if (scene == nullptr)
+		{
+			throw std::runtime_error("Failed to load model : " + fileName);
+		}
+
+		std::vector<std::string> textureNames = Model::LoadMaterials(scene);
+		std::vector<int> matToTex(textureNames.size());
+
+		for (size_t i = 0; i < textureNames.size(); i++)
+		{
+			if (textureNames[i].empty())
+			{
+				matToTex[i] = 0;
+			}
+			else
+			{
+				matToTex[i] = CreateTexture(textureNames[i]);
+			}
+		}
+
+		std::vector<Mesh> modelMeshes = Model::LoadNode(deviceHandle.physicalDevice, deviceHandle.logicalDevice,
+			graphicsQueue, gfxCommandPool, scene->mRootNode, scene, matToTex, scaleFactor);
+
+		Model model = Model(modelMeshes);
+		modelList.push_back(model);
+	}
+
 	void VulkanRenderer::RecordCommands(uint32_t currentImageIndex)
 	{
 		PROFILE_FUNCTION();
@@ -842,28 +884,31 @@ namespace Renderer
 
 		vkCmdBindPipeline(commandBuffers[currentImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelinePtr->GetPipeline());
 
-		for (size_t j = 0; j < meshList.size(); j++)
+		for (size_t j = 0; j < modelList.size(); j++)
 		{
-
-			VkBuffer vertexBuffers[] = { meshList[j].GetVertexBuffer() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(commandBuffers[currentImageIndex], 0, 1, vertexBuffers, offsets);
-			vkCmdBindIndexBuffer(commandBuffers[currentImageIndex], meshList[j].GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-			//Dynamic offset amount
-			uint32_t dynamicOffset = renderPipelinePtr->GetModelUniformAlignment() * static_cast<uint32_t>(j);
-
+			Model thisModel = modelList[j];
 			vkCmdPushConstants(commandBuffers[currentImageIndex], renderPipelinePtr->GetPipelineLayout(),
-				VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &j);
+				VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &thisModel.GetModelMatrix());
 
-			std::array<VkDescriptorSet, 2> descSetGroup = {
-				renderPipelinePtr->GetDescriptorSet(currentImageIndex),
-				renderPipelinePtr->GetSamplerDescriptorSet(meshList[j].GetTexId()) };
+			for (size_t k = 0; k < thisModel.GetMeshCount(); k++)
+			{
+				VkBuffer vertexBuffers[] = { thisModel.GetMesh(k)->GetVertexBuffer() };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(commandBuffers[currentImageIndex], 0, 1, vertexBuffers, offsets);
+				vkCmdBindIndexBuffer(commandBuffers[currentImageIndex], thisModel.GetMesh(k)->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			vkCmdBindDescriptorSets(commandBuffers[currentImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-				renderPipelinePtr->GetPipelineLayout(), 0, static_cast<uint32_t>(descSetGroup.size()), descSetGroup.data(), 1, &dynamicOffset);
+				//Dynamic offset amount
+				uint32_t dynamicOffset = renderPipelinePtr->GetModelUniformAlignment() * static_cast<uint32_t>(j);
 
-			vkCmdDrawIndexed(commandBuffers[currentImageIndex], static_cast<uint32_t>(meshList[j].GetIndexCount()), 1, 0, 0, 0);
+				std::array<VkDescriptorSet, 2> descSetGroup = {
+					renderPipelinePtr->GetDescriptorSet(currentImageIndex),
+					renderPipelinePtr->GetSamplerDescriptorSet(thisModel.GetMesh(k)->GetTexId()) };
+
+				vkCmdBindDescriptorSets(commandBuffers[currentImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
+					renderPipelinePtr->GetPipelineLayout(), 0, static_cast<uint32_t>(descSetGroup.size()), descSetGroup.data(), 1, &dynamicOffset);
+
+				vkCmdDrawIndexed(commandBuffers[currentImageIndex], static_cast<uint32_t>(thisModel.GetMesh(k)->GetIndexCount()), 1, 0, 0, 0);
+			}
 		}
 
 		vkCmdEndRenderPass(commandBuffers[currentImageIndex]);

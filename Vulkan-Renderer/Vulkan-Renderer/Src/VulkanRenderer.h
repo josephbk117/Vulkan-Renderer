@@ -6,6 +6,7 @@
 #include <set>
 #include "Utils.h"
 #include "Mesh.h"
+#include "Model.h"
 
 using namespace Utilities;
 namespace Renderer
@@ -56,6 +57,7 @@ namespace Renderer
 		// Assets
 		std::vector<TextureHandle> textureHandles;
 		std::vector<VkImageView> textureImgViews;
+		std::vector<Model> modelList;
 
 		// Synchronization
 		std::vector<VkSemaphore> imageAvailable;
@@ -83,6 +85,7 @@ namespace Renderer
 		void CreateTextureSampler();
 		int32_t CreateTexture(const std::string& fileName);
 		int32_t CreateTextureImage(const std::string& fileName);
+		void CreateModel(const std::string& fileName, float scaleFactor = 1.0f);
 		void RecordCommands(uint32_t currentImageIndex);
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
