@@ -17,8 +17,8 @@ namespace Renderer
 	{
 	public:
 		bool Init(GLFWwindow* window);
-		void CreateModel(const std::string& fileName, float scaleFactor = 1.0f);
-		void Update();
+		int32_t CreateModel(const std::string& fileName, float scaleFactor = 1.0f);
+		void Update(int32_t modelId, const glm::mat4& modelMat);
 		void Draw();
 		void CleanUp();
 

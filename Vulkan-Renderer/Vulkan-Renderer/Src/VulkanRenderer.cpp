@@ -52,29 +52,18 @@ namespace Renderer
 		return EXIT_SUCCESS;
 	}
 
-	void VulkanRenderer::Update()
+	void VulkanRenderer::Update(int32_t modelId, const glm::mat4& modelMat)
 	{
 		PROFILE_FUNCTION();
 
-		static float angle = 0.0f;
-		static float lastTime = 0.0f;
-
-		float deltaTime = 0.0f;
-
-		float now = static_cast<float>(glfwGetTime());
-		deltaTime = now - lastTime;
-
-		angle += deltaTime;
-
-		for (size_t i = 0; i < modelList.size(); i++)
+		if (modelId >= 0 && modelId < modelList.size())
 		{
-			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, glm::sin(angle) * 50.0f));
-			glm::mat4 rot = glm::rotate(translation, glm::radians(angle * 10.0f), GLOBAL_FORWARD);
-			rot = glm::rotate(rot, glm::radians(angle * 20.0f), GLOBAL_UP);
-			modelList[i].SetModelMatrix(rot);
+			modelList[modelId].SetModelMatrix(modelMat);
 		}
-
-		lastTime = now;
+		else
+		{
+			throw std::runtime_error("Failed to update model, Invalid index");
+		}		
 	}
 
 	void VulkanRenderer::Draw()
@@ -799,7 +788,7 @@ namespace Renderer
 		return static_cast<int32_t>(textureHandles.size()) - 1;
 	}
 
-	void VulkanRenderer::CreateModel(const std::string& fileName, float scaleFactor /*= 1.0f*/)
+	int32_t VulkanRenderer::CreateModel(const std::string& fileName, float scaleFactor /*= 1.0f*/)
 	{
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(MODELS_PATH + fileName, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
@@ -829,6 +818,8 @@ namespace Renderer
 
 		Model model = Model(modelMeshes);
 		modelList.push_back(model);
+
+		return modelList.size() - 1;
 	}
 
 	void VulkanRenderer::RecordCommands(uint32_t currentImageIndex)
