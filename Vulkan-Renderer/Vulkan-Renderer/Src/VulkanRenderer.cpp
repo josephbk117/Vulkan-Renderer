@@ -35,27 +35,12 @@ namespace Renderer
 			CreateTextureSampler();
 			CreateSynchronization();
 
-			int32_t texture1Id = CreateTexture("testTexture.jpg");
+			// Default texture, Will be assigned if no texture can be found on 3D model file
+			CreateTexture("testTexture.jpg");
 
 			renderPipelinePtr->SetPerspectiveProjectionMatrix(glm::radians(60.0f), (float)swapChainExtent.width / swapChainExtent.height, 0.1f, 1000.0f);
 			renderPipelinePtr->SetViewMatrixFromLookAt(glm::vec3(0.0f, 0.0f, 200.0f), glm::vec3(0.0f), GLOBAL_UP);
 			renderPipelinePtr->SetModelMatrix(glm::mat4(1.0f));
-
-			//Create models
-			/*std::vector<Vertex> meshVertices =
-			{
-			{{-0.25, 0.1, 0.0}, {1,0,0}, {0,0}},
-			{{0.25, 0.1, 0.0}, {0,1,0}, {0, 1}},
-			{{0.25, -0.1, 0.0}, {0,0,1}, {1, 1}},
-			{{-0.25, -0.1, 0.0}, {0,1,1}, {1, 0}}
-			};
-
-			std::vector<uint32_t> meshIndices = { 2, 1, 0, 0, 3, 2 };
-
-			for (size_t i = 0; i < 4; i++)
-			{
-				meshList.emplace_back(deviceHandle.physicalDevice, deviceHandle.logicalDevice, graphicsQueue, gfxCommandPool, &meshVertices, &meshIndices, texture1Id);
-			}*/
 
 			CreateModel("11805_airplane_v2_L2.obj", 0.1f);
 
