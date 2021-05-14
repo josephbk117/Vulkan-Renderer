@@ -122,6 +122,15 @@ Mesh Model::LoadMesh(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
 			vertices[i].col = { 1.0f, 1.0f, 1.0f };
 		}
 
+		if (mesh->mNormals != nullptr)
+		{
+			vertices[i].normal = { mesh->mNormals[i].x,  mesh->mNormals[i].y , mesh->mNormals[i].z };
+		}
+		else
+		{
+			vertices[i].normal = { 0.0f, 1.0f, 0.0f };
+		}
+
 		if (mesh->mTextureCoords[0] != nullptr)
 		{
 			vertices[i].uv = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };

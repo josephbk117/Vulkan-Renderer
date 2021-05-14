@@ -2,7 +2,8 @@
 
 layout(location = 0) in vec3 pos;
 layout(location = 1) in vec3 col;
-layout(location = 2) in vec2 uv;
+layout(location = 2) in vec3 normal;
+layout(location = 3) in vec2 uv;
 
 layout(set = 0, binding = 0) uniform UboVP
 {
@@ -25,7 +26,7 @@ layout(location = 1) out vec2 outUV;
 
 void main()
 {
-	outCol = vec3(pushModel.model) * 0.5 * col;
+	outCol = (pushModel.model * vec4(normal, 0.0)).rgb;
 	outUV = uv;
 	gl_Position = uboVP.projection * uboVP.view * pushModel.model * vec4(pos, 1.0);
 }

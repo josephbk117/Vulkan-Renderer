@@ -73,9 +73,15 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	vertAttributeDescs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 	vertAttributeDescs[1].offset = offsetof(Vertex, col);
 
+	// Normal
+	vertAttributeDescs[1].binding = 0;
+	vertAttributeDescs[1].location = 2;
+	vertAttributeDescs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+	vertAttributeDescs[1].offset = offsetof(Vertex, normal);
+
 	// UV
 	vertAttributeDescs[2].binding = 0;
-	vertAttributeDescs[2].location = 2;
+	vertAttributeDescs[2].location = 3;
 	vertAttributeDescs[2].format = VK_FORMAT_R32G32_SFLOAT;
 	vertAttributeDescs[2].offset = offsetof(Vertex, uv);
 
