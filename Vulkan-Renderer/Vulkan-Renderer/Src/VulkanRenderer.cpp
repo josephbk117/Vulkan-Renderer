@@ -83,11 +83,13 @@ namespace Renderer
 
 		angle += deltaTime;
 
-		/*for (size_t i = 0; i < 4; i++)
+		for (size_t i = 0; i < modelList.size(); i++)
 		{
-			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, glm::sin((i + 1) * angle * 0.5f)));
-			meshList[i].SetModel(glm::rotate(translation, glm::radians(angle * (i + 1) * 10.0f), GLOBAL_FORWARD));
-		}*/
+			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, glm::sin(angle) * 50.0f));
+			glm::mat4 rot = glm::rotate(translation, glm::radians(angle * 10.0f), GLOBAL_FORWARD);
+			rot = glm::rotate(rot, glm::radians(angle * 20.0f), GLOBAL_UP);
+			modelList[i].SetModelMatrix(rot);
+		}
 
 		lastTime = now;
 	}
