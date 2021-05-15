@@ -695,7 +695,7 @@ void Renderer::RenderPipeline::CreatePushConstantRange()
 
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(uint32_t);
+	pushConstantRange.size = sizeof(glm::mat4);
 }
 
 void Renderer::RenderPipeline::AllocateDynamicBufferTransferSpace()
