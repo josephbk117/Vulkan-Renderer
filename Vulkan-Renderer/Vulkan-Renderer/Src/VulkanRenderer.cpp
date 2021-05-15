@@ -898,6 +898,8 @@ namespace Renderer
 
 	int32_t VulkanRenderer::CreateModel(const std::string& fileName, float scaleFactor /*= 1.0f*/)
 	{
+		PROFILE_FUNCTION();
+
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(MODELS_PATH + fileName, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 

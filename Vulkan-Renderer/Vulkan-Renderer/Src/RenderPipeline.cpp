@@ -627,6 +627,7 @@ void Renderer::RenderPipeline::CreateDescriptorSets()
 
 void Renderer::RenderPipeline::CreateInputDescriptorSets()
 {
+	PROFILE_FUNCTION();
 	// Resize array to hold descriptor set for each Swapchain image
 	inputDescriptorSets.resize(pipelineCreateInfo.swapchainImageCount);
 
