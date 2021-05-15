@@ -97,6 +97,8 @@
     <None Include="Res\glslc.exe">
       <Filter>Misc</Filter>
     </None>
+    <None Include="Res\Shaders\second_subpass.vert" />
+    <None Include="Res\Shaders\second_subpass.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Res\Textures\testTexture.jpg">
