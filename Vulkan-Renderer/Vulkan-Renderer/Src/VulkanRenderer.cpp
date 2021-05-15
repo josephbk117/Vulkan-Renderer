@@ -475,7 +475,7 @@ namespace Renderer
 		// Colour attachment
 		VkAttachmentDescription colourAttachment = {};
 		colourAttachment.format = GetSuitableFormat(
-			{ VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R32G32B32A32_UINT },
+			{ VK_FORMAT_R8G8B8A8_UNORM },
 			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 		colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -632,7 +632,7 @@ namespace Renderer
 		colourBufferImageView.resize(swapChainImages.size());
 
 		VkFormat colourFormat = GetSuitableFormat(
-			{ VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R32G32B32A32_UINT },
+			{ VK_FORMAT_R8G8B8A8_UNORM },
 			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 		CreateImageInfo imageCreateInfo = {};
