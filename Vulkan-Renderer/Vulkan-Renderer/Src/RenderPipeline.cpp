@@ -11,6 +11,9 @@ Renderer::RenderPipeline::~RenderPipeline()
 	_aligned_free(modelTransferSpace);
 	modelTransferSpace = nullptr;
 
+	vkDestroyDescriptorPool(pipelineCreateInfo.device.logicalDevice, inputDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, inputSetLayout, nullptr);
+
 	vkDestroyDescriptorPool(pipelineCreateInfo.device.logicalDevice, samplerDescriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, samplerSetLayout, nullptr);
 	vkDestroyDescriptorPool(pipelineCreateInfo.device.logicalDevice, descriptorPool, nullptr);
@@ -24,6 +27,8 @@ Renderer::RenderPipeline::~RenderPipeline()
 		vkFreeMemory(pipelineCreateInfo.device.logicalDevice, modelUniformDynamicBufferMemory[i], nullptr);
 	}
 
+	vkDestroyPipeline(pipelineCreateInfo.device.logicalDevice, secondPipeline, nullptr);
+	vkDestroyPipelineLayout(pipelineCreateInfo.device.logicalDevice, secondPipelineLayout, nullptr);
 	vkDestroyPipeline(pipelineCreateInfo.device.logicalDevice, gfxPipeline, nullptr);
 	vkDestroyPipelineLayout(pipelineCreateInfo.device.logicalDevice, pipelineLayout, nullptr);
 }
@@ -40,13 +45,13 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	VkPipelineShaderStageCreateInfo vertexShaderCreateInfo = {};
 	vertexShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertexShaderCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertexShaderCreateInfo.module = pipelineCreateInfo.vertexModule;
+	vertexShaderCreateInfo.module = pipelineCreateInfo.firstPassShaderModule.vertexModule;
 	vertexShaderCreateInfo.pName = "main";
 
 	VkPipelineShaderStageCreateInfo fragmentShaderCreateInfo = {};
 	fragmentShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragmentShaderCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragmentShaderCreateInfo.module = pipelineCreateInfo.fragmentModule;
+	fragmentShaderCreateInfo.module = pipelineCreateInfo.firstPassShaderModule.fragmentModule;
 	fragmentShaderCreateInfo.pName = "main";
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertexShaderCreateInfo, fragmentShaderCreateInfo };
@@ -200,10 +205,51 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 		throw std::runtime_error("Failed to create graphics pipeline");
 	}
 
+	vertexShaderCreateInfo.module = pipelineCreateInfo.secondPassShaderModule.vertexModule;
+	fragmentShaderCreateInfo.module = pipelineCreateInfo.secondPassShaderModule.fragmentModule;
+
+	VkPipelineShaderStageCreateInfo secondShaderStages[] = { vertexShaderCreateInfo, fragmentShaderCreateInfo };
+
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
+	vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
+	vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
+
+	depthStencilCreateInfo.depthWriteEnable = VK_FALSE;
+
+	VkPipelineLayoutCreateInfo secondPipelineCreateInfo = {};
+	secondPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	secondPipelineCreateInfo.setLayoutCount = 1;
+	secondPipelineCreateInfo.pSetLayouts = &inputSetLayout;
+	secondPipelineCreateInfo.pushConstantRangeCount = 0;
+	secondPipelineCreateInfo.pPushConstantRanges = nullptr;
+
+	vkResult = vkCreatePipelineLayout(pipelineCreateInfo.device.logicalDevice, &secondPipelineCreateInfo, nullptr, &secondPipelineLayout);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create pipeline layout");
+	}
+
+	graphicsPipelineCreateInfo.pStages = secondShaderStages;
+	graphicsPipelineCreateInfo.layout = secondPipelineLayout;
+	graphicsPipelineCreateInfo.subpass = 1;
+
+	// Create second pipeline
+
+	vkResult = vkCreateGraphicsPipelines(pipelineCreateInfo.device.logicalDevice, VK_NULL_HANDLE, 1, 
+		&graphicsPipelineCreateInfo, nullptr, &secondPipeline);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create graphics pipeline");
+	}
+
 	AllocateDynamicBufferTransferSpace();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
+	CreateInputDescriptorSets();
 }
 
 VkPipeline Renderer::RenderPipeline::GetPipeline() const
@@ -211,9 +257,19 @@ VkPipeline Renderer::RenderPipeline::GetPipeline() const
 	return gfxPipeline;
 }
 
+VkPipeline Renderer::RenderPipeline::GetSecondPipeline() const
+{
+	return secondPipeline;
+}
+
 VkPipelineLayout Renderer::RenderPipeline::GetPipelineLayout() const
 {
 	return pipelineLayout;
+}
+
+VkPipelineLayout Renderer::RenderPipeline::GetSecondPipelineLayout() const
+{
+	return secondPipelineLayout;
 }
 
 VkDescriptorSet& Renderer::RenderPipeline::GetDescriptorSet(uint32_t index)
@@ -224,6 +280,11 @@ VkDescriptorSet& Renderer::RenderPipeline::GetDescriptorSet(uint32_t index)
 VkDescriptorSet& Renderer::RenderPipeline::GetSamplerDescriptorSet(uint32_t index)
 {
 	return samplerDescriptorSets[index];
+}
+
+VkDescriptorSet& Renderer::RenderPipeline::GetInputDescriptorSet(uint32_t index)
+{
+	return inputDescriptorSets[index];
 }
 
 void Renderer::RenderPipeline::SetPerspectiveProjectionMatrix(float fov, float aspectRatio, float nearPlane, float farPlane)
@@ -370,6 +431,36 @@ void Renderer::RenderPipeline::CreateDescriptorSetLayout()
 		throw std::runtime_error("Failed to create descriptor set layout");
 	}
 
+	// Create input attachment image descriptor set layout
+	// colour input binding
+	VkDescriptorSetLayoutBinding colourInputLayoutBinding = {};
+	colourInputLayoutBinding.binding = 0;
+	colourInputLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+	colourInputLayoutBinding.descriptorCount = 1;
+	colourInputLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	// depth input binding
+	VkDescriptorSetLayoutBinding depthInputLayoutBinding = {};
+	depthInputLayoutBinding.binding = 1;
+	depthInputLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+	depthInputLayoutBinding.descriptorCount = 1;
+	depthInputLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	std::array<VkDescriptorSetLayoutBinding, 2> inputBindings = { colourInputLayoutBinding, depthInputLayoutBinding };
+
+	// Create descriptor set layout for input attachments
+	VkDescriptorSetLayoutCreateInfo inputLayoutCreateInfo = {};
+	inputLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	inputLayoutCreateInfo.bindingCount = static_cast<uint32_t>(inputBindings.size());
+	inputLayoutCreateInfo.pBindings = inputBindings.data();
+
+	vkResult = vkCreateDescriptorSetLayout(pipelineCreateInfo.device.logicalDevice, &inputLayoutCreateInfo, nullptr, &inputSetLayout);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor set layout");
+	}
+
 }
 
 void Renderer::RenderPipeline::CreateUniformBuffers()
@@ -449,6 +540,33 @@ void Renderer::RenderPipeline::CreateDescriptorPool()
 		throw std::runtime_error("Failed to create descriptor pool");
 	}
 
+	// Create input attachment descriptor pool
+	// colour attachment pool
+	VkDescriptorPoolSize colourInputPoolSize = {};
+	colourInputPoolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+	colourInputPoolSize.descriptorCount = static_cast<uint32_t>(pipelineCreateInfo.swapchainImageCount);
+
+	// depth attachment pool
+	VkDescriptorPoolSize depthInputPoolSize = {};
+	depthInputPoolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+	depthInputPoolSize.descriptorCount = static_cast<uint32_t>(pipelineCreateInfo.swapchainImageCount);
+
+	std::array<VkDescriptorPoolSize, 2> inputPoolSizes = { colourInputPoolSize, depthInputPoolSize };
+	// Create input attachment pool
+
+	VkDescriptorPoolCreateInfo inputPoolCreateInfo = {};
+	inputPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	inputPoolCreateInfo.maxSets = static_cast<uint32_t>(pipelineCreateInfo.swapchainImageCount);
+	inputPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(inputPoolSizes.size());
+	inputPoolCreateInfo.pPoolSizes = inputPoolSizes.data();
+
+	vkResult = vkCreateDescriptorPool(pipelineCreateInfo.device.logicalDevice, &inputPoolCreateInfo, nullptr, &inputDescriptorPool);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor pool");
+	}
+
 }
 
 void Renderer::RenderPipeline::CreateDescriptorSets()
@@ -504,6 +622,69 @@ void Renderer::RenderPipeline::CreateDescriptorSets()
 		std::vector<VkWriteDescriptorSet> setWrites = { vpSetWrite, modelSetWrite };
 
 		vkUpdateDescriptorSets(pipelineCreateInfo.device.logicalDevice, static_cast<uint32_t>(setWrites.size()), setWrites.data(), 0, nullptr);
+	}
+}
+
+void Renderer::RenderPipeline::CreateInputDescriptorSets()
+{
+	// Resize array to hold descriptor set for each Swapchain image
+	inputDescriptorSets.resize(pipelineCreateInfo.swapchainImageCount);
+
+	std::vector<VkDescriptorSetLayout> setLayouts(pipelineCreateInfo.swapchainImageCount, inputSetLayout);
+
+	VkDescriptorSetAllocateInfo setAllocInfo = {};
+	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	setAllocInfo.descriptorPool = inputDescriptorPool;
+	setAllocInfo.descriptorSetCount = static_cast<uint32_t>(pipelineCreateInfo.swapchainImageCount);
+	setAllocInfo.pSetLayouts = setLayouts.data();
+
+	VkResult result = vkAllocateDescriptorSets(pipelineCreateInfo.device.logicalDevice, &setAllocInfo, inputDescriptorSets.data());
+
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate input attachment descriptor sets");
+	}
+
+	// Update each descriptor set with input attachment
+
+	for (size_t i = 0; i < pipelineCreateInfo.swapchainImageCount; i++)
+	{
+		// Colour attachment descriptor
+		VkDescriptorImageInfo colourAttachmentDescriptor = {};
+		colourAttachmentDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		colourAttachmentDescriptor.imageView = pipelineCreateInfo.colourBufferImageViewPtr->at(i);
+		colourAttachmentDescriptor.sampler = VK_NULL_HANDLE;
+
+		// Colour attachment descriptor write
+		VkWriteDescriptorSet colourWrite = {};
+		colourWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		colourWrite.dstSet = inputDescriptorSets[i];
+		colourWrite.dstBinding = 0;
+		colourWrite.dstArrayElement = 0;
+		colourWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		colourWrite.descriptorCount = 1;
+		colourWrite.pImageInfo = &colourAttachmentDescriptor;
+
+		// Depth attachment descriptor
+		VkDescriptorImageInfo depthAttachmentDescriptor = {};
+		depthAttachmentDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		depthAttachmentDescriptor.imageView = pipelineCreateInfo.depthBufferImageViewPtr->at(i);
+		depthAttachmentDescriptor.sampler = VK_NULL_HANDLE;
+
+		// Depth attachment descriptor write
+		VkWriteDescriptorSet depthWrite = {};
+		depthWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		depthWrite.dstSet = inputDescriptorSets[i];
+		depthWrite.dstBinding = 1;
+		depthWrite.dstArrayElement = 0;
+		depthWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		depthWrite.descriptorCount = 1;
+		depthWrite.pImageInfo = &depthAttachmentDescriptor;
+
+		std::array<VkWriteDescriptorSet, 2> setWrites = { colourWrite, depthWrite };
+
+		vkUpdateDescriptorSets(pipelineCreateInfo.device.logicalDevice, static_cast<uint32_t>(setWrites.size()), setWrites.data(), 0, nullptr);
+
 	}
 }
 

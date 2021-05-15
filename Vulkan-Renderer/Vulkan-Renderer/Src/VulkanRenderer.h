@@ -51,9 +51,13 @@ namespace Renderer
 
 		VkCommandPool gfxCommandPool;
 
-		VkImage depthBufferImage;
-		VkDeviceMemory depthBufferImageMemory;
-		VkImageView depthBufferImageView;
+		std::vector<VkImage> colourBufferImage;
+		std::vector<VkDeviceMemory> colourBufferImageMemory;
+		std::vector<VkImageView> colourBufferImageView;
+
+		std::vector<VkImage> depthBufferImage;
+		std::vector<VkDeviceMemory> depthBufferImageMemory;
+		std::vector<VkImageView> depthBufferImageView;
 
 		// Assets
 		std::vector<TextureHandle> textureHandles;
@@ -77,6 +81,7 @@ namespace Renderer
 		void CreateSwapChain();
 		void CreateRenderPass();
 		void CreateRenderPipeline();
+		void CreateColorBufferImage();
 		void CreateDepthBufferImage();
 		void CreateFrameBuffers();
 		void CreateCommandPool();
