@@ -8,4 +8,11 @@ layout(location = 0) out vec4 outCol;
 void main()
 {
 	outCol = subpassLoad(inputColour).rgba;
+	float depth = subpassLoad(inputDepth).r;
+
+	const float upperBound = 1.0f;
+	const float lowerBound = 0.999f;
+	float depthScaled = 1.0f - ((depth - lowerBound)/(upperBound - lowerBound));
+
+	outCol.rgb *= depthScaled;
 }
