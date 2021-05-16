@@ -48,6 +48,7 @@ namespace RendererCookAndBuildTool
             List<string> foldersToAddToOutputRes = new List<string>();
             foldersToAddToOutputRes.Add(PathInfo.CompiledShadersFolder);
             foldersToAddToOutputRes.Add(PathInfo.TexturesFolder);
+            foldersToAddToOutputRes.Add(PathInfo.ModelsFolder);
 
             foreach (string inputFolder in foldersToAddToOutputRes)
             {
