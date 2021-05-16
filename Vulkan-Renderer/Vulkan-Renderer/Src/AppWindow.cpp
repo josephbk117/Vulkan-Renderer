@@ -13,8 +13,10 @@ void ApplicationWindow::AppWindow::Initwindow(const WindowProperties& _windowPro
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 	windowPtr = glfwCreateWindow(_windowProps.width, _windowProps.height, _windowProps.windowName.c_str(), nullptr, nullptr);
+	glfwSetWindowUserPointer(windowPtr, this);
+	glfwSetFramebufferSizeCallback(windowPtr, FrameBufferResizeCallback);
 }
 
 ApplicationWindow::AppWindow::WindowProperties ApplicationWindow::AppWindow::GetWindowProperties() const
@@ -52,6 +54,22 @@ void ApplicationWindow::AppWindow::CreateVulkanWindowSurface(VkInstance instance
 GLFWwindow* ApplicationWindow::AppWindow::GetWindow() const
 {
 	return windowPtr;
+}
+
+bool ApplicationWindow::AppWindow::HasWindowBeenResized() const
+{
+	return frameBufferResized;
+}
+
+void ApplicationWindow::AppWindow::ResetWindowResizedState()
+{
+	frameBufferResized = false;
+}
+
+void ApplicationWindow::AppWindow::FrameBufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+	auto app = reinterpret_cast<ApplicationWindow::AppWindow*>(glfwGetWindowUserPointer(window));
+	app->frameBufferResized = true;
 }
 
 ApplicationWindow::AppWindow::~AppWindow()

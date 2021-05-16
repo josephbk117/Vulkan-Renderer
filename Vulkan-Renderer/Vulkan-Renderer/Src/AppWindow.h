@@ -31,11 +31,16 @@ namespace ApplicationWindow
 		void PollInputs() const;
 		void CreateVulkanWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
 		GLFWwindow* GetWindow() const;
+		bool HasWindowBeenResized() const;
+		void ResetWindowResizedState();
 
 	protected:
 		WindowProperties windowProps;
 
 	private:
 		GLFWwindow* windowPtr = nullptr;
+		bool frameBufferResized = false;
+
+		static void FrameBufferResizeCallback(GLFWwindow* window, int width, int height);
 	};
 }

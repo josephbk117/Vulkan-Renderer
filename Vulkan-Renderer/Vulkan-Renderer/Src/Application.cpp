@@ -13,7 +13,7 @@ void Application::Run()
 {
 	PROFILE_FUNCTION();
 
-	renderer.Init(appWindow.GetWindow());
+	renderer.Init(&appWindow);
 	int32_t planeModelId = renderer.CreateModel("11805_airplane_v2_L2.obj", 0.1f);
 	{
 		PROFILE_SCOPE("RenderLoop");

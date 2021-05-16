@@ -13,7 +13,7 @@
 
 namespace Renderer
 {
-	bool VulkanRenderer::Init(GLFWwindow* window)
+	bool VulkanRenderer::Init(ApplicationWindow::AppWindow* window)
 	{
 		PROFILE_FUNCTION();
 		this->window = window;
@@ -116,7 +116,11 @@ namespace Renderer
 
 			vkResult = vkQueuePresentKHR(presentationQueue, &presentInfo);
 
-			if (vkResult != VK_SUCCESS)
+			if (vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || window->HasWindowBeenResized())
+			{
+				window->ResetWindowResizedState();
+			}
+			else if (vkResult != VK_SUCCESS)
 			{
 				throw std::runtime_error("Failed to present to queue");
 			}
@@ -144,7 +148,9 @@ namespace Renderer
 			vkFreeMemory(deviceHandle.logicalDevice, textureHandles[i].memory, nullptr);
 		}
 
-		for (size_t i = 0; i < depthBufferImage.size(); i++)
+		CleanupSwapchain();
+
+		/*for (size_t i = 0; i < depthBufferImage.size(); i++)
 		{
 			vkDestroyImageView(deviceHandle.logicalDevice, depthBufferImageView[i], nullptr);
 			vkDestroyImage(deviceHandle.logicalDevice, depthBufferImage[i], nullptr);
@@ -185,7 +191,7 @@ namespace Renderer
 			renderPipelinePtr = nullptr;
 		}
 
-		vkDestroySwapchainKHR(deviceHandle.logicalDevice, swapChain, nullptr);
+		vkDestroySwapchainKHR(deviceHandle.logicalDevice, swapChain, nullptr);*/
 		vkDestroySurfaceKHR(instance, surface, nullptr);
 		vkDestroyDevice(deviceHandle.logicalDevice, nullptr);
 		DestroyValidationDebugMessenger();
@@ -368,7 +374,7 @@ namespace Renderer
 	{
 		PROFILE_FUNCTION();
 
-		if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+		if (glfwCreateWindowSurface(instance, window->GetWindow(), nullptr, &surface) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create window surface");
 		}
@@ -798,6 +804,68 @@ namespace Renderer
 		{
 			throw std::runtime_error("Failed to create texture sampler!");
 		}
+	}
+
+	void VulkanRenderer::CleanupSwapchain()
+	{
+		for (size_t i = 0; i < depthBufferImage.size(); i++)
+		{
+			vkDestroyImageView(deviceHandle.logicalDevice, depthBufferImageView[i], nullptr);
+			vkDestroyImage(deviceHandle.logicalDevice, depthBufferImage[i], nullptr);
+			vkFreeMemory(deviceHandle.logicalDevice, depthBufferImageMemory[i], nullptr);
+		}
+
+		for (size_t i = 0; i < colourBufferImage.size(); i++)
+		{
+			vkDestroyImageView(deviceHandle.logicalDevice, colourBufferImageView[i], nullptr);
+			vkDestroyImage(deviceHandle.logicalDevice, colourBufferImage[i], nullptr);
+			vkFreeMemory(deviceHandle.logicalDevice, colourBufferImageMemory[i], nullptr);
+		}
+
+		for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
+		{
+			vkDestroySemaphore(deviceHandle.logicalDevice, renderFinished[i], nullptr);
+			vkDestroySemaphore(deviceHandle.logicalDevice, imageAvailable[i], nullptr);
+			vkDestroyFence(deviceHandle.logicalDevice, drawFences[i], nullptr);
+		}
+
+		vkDestroyCommandPool(deviceHandle.logicalDevice, gfxCommandPool, nullptr);
+
+		for (auto frameBuffer : swapchainFrameBuffers)
+		{
+			vkDestroyFramebuffer(deviceHandle.logicalDevice, frameBuffer, nullptr);
+		}
+
+		for (const auto& image : swapChainImages)
+		{
+			vkDestroyImageView(deviceHandle.logicalDevice, image.imageView, nullptr);
+		}
+
+		vkDestroyRenderPass(deviceHandle.logicalDevice, renderPass, nullptr);
+
+		if (renderPipelinePtr != nullptr)
+		{
+			delete renderPipelinePtr;
+			renderPipelinePtr = nullptr;
+		}
+
+		vkDestroySwapchainKHR(deviceHandle.logicalDevice, swapChain, nullptr);
+	}
+
+	void VulkanRenderer::RecreateSwapChain()
+	{
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(window->GetWindow(), &width, &height);
+		while (width == 0 || height == 0)
+		{
+			glfwGetFramebufferSize(window->GetWindow(), &width, &height);
+			glfwWaitEvents();
+		}
+
+		vkDeviceWaitIdle(deviceHandle.logicalDevice);
+
+		CleanupSwapchain();
+
 	}
 
 	int32_t VulkanRenderer::CreateTexture(const std::string& fileName)
@@ -1235,7 +1303,7 @@ namespace Renderer
 		else
 		{
 			int width, height;
-			glfwGetFramebufferSize(window, &width, &height);
+			glfwGetFramebufferSize(window->GetWindow(), &width, &height);
 			VkExtent2D extent{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
 			extent.width = std::min(surfaceCapabilities.maxImageExtent.width, extent.width);

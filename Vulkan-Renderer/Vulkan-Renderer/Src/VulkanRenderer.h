@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "Mesh.h"
 #include "Model.h"
+#include "AppWindow.h"
 
 using namespace Utilities;
 namespace Renderer
@@ -16,7 +17,7 @@ namespace Renderer
 	class VulkanRenderer
 	{
 	public:
-		bool Init(GLFWwindow* window);
+		bool Init(ApplicationWindow::AppWindow* window);
 		int32_t CreateModel(const std::string& fileName, float scaleFactor = 1.0f);
 		void Update(int32_t modelId, const glm::mat4& modelMat);
 		void Draw();
@@ -25,7 +26,7 @@ namespace Renderer
 	private:
 		mutable DeviceHandle deviceHandle;
 
-		GLFWwindow* window = nullptr;
+		ApplicationWindow::AppWindow* window = nullptr;
 		int currentFrame = 0;
 
 		//Scene Objects
@@ -88,6 +89,8 @@ namespace Renderer
 		void CreateCommandBuffers();
 		void CreateSynchronization();
 		void CreateTextureSampler();
+		void CleanupSwapchain();
+		void RecreateSwapChain();
 		int32_t CreateTexture(const std::string& fileName);
 		int32_t CreateTextureImage(const std::string& fileName);
 		void RecordCommands(uint32_t currentImageIndex);
