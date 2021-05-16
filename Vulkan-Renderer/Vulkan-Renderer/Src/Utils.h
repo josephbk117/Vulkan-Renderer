@@ -463,6 +463,82 @@ namespace Utilities
 			return shaderModule;
 		}
 
+		static VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+		{
+			PROFILE_FUNCTION();
+
+			VkImageViewCreateInfo viewCreateInfo = {};
+			viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			viewCreateInfo.image = image;
+			viewCreateInfo.format = format;
+			viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCreateInfo.subresourceRange.aspectMask = aspectFlags;
+			viewCreateInfo.subresourceRange.baseMipLevel = 0;
+			viewCreateInfo.subresourceRange.levelCount = 1;
+			viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+			viewCreateInfo.subresourceRange.layerCount = 1;
+
+			VkImageView imageView;
+			VkResult result = vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView);
+
+			if (result != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to create image view");
+			}
+
+			return imageView;
+		}
+
+		static VkImage CreateImage(DeviceHandle deviceHandle, const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory)
+		{
+			PROFILE_FUNCTION();
+
+			VkImageCreateInfo imageCreateInfo = {};
+			imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+			imageCreateInfo.extent.width = createImageInfo.width;
+			imageCreateInfo.extent.height = createImageInfo.height;
+			imageCreateInfo.extent.depth = 1;
+			imageCreateInfo.mipLevels = 1;
+			imageCreateInfo.arrayLayers = 1;
+			imageCreateInfo.format = createImageInfo.format;
+			imageCreateInfo.tiling = createImageInfo.tiling;
+			imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			imageCreateInfo.usage = createImageInfo.useFlags;
+			imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+			imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			VkImage image;
+
+			VkResult vkResult = vkCreateImage(deviceHandle.logicalDevice, &imageCreateInfo, nullptr, &image);
+			if (vkResult != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to create image ");
+			}
+
+			VkMemoryRequirements memoryRequirements;
+			vkGetImageMemoryRequirements(deviceHandle.logicalDevice, image, &memoryRequirements);
+
+			VkMemoryAllocateInfo memoryAllocInfo = {};
+			memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			memoryAllocInfo.allocationSize = memoryRequirements.size;
+			memoryAllocInfo.memoryTypeIndex = Utils::FindMemoryTypeIndex(deviceHandle.physicalDevice, memoryRequirements.memoryTypeBits, createImageInfo.propFlags);
+
+			vkResult = vkAllocateMemory(deviceHandle.logicalDevice, &memoryAllocInfo, nullptr, imageMemory);
+			if (vkResult != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to allocate memory for image");
+			}
+
+			vkBindImageMemory(deviceHandle.logicalDevice, image, *imageMemory, 0);
+
+			return image;
+		}
+
 		static stbi_uc* LoadTextureFile(const std::string& fileName, TextureInfo& texInfo)
 		{
 			PROFILE_FUNCTION();

@@ -450,7 +450,7 @@ namespace Renderer
 		{
 			SwapChainImage swapChainImage = {};
 			swapChainImage.image = image;
-			swapChainImage.imageView = CreateImageView(image, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+			swapChainImage.imageView = Utils::CreateImageView(deviceHandle.logicalDevice, image, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
 			swapChainImages.push_back(swapChainImage);
 		}
@@ -651,8 +651,8 @@ namespace Renderer
 
 		for (size_t i = 0; i < swapChainImages.size(); i++)
 		{
-			colourBufferImage[i] = CreateImage(imageCreateInfo, &colourBufferImageMemory[i]);
-			colourBufferImageView[i] = CreateImageView(colourBufferImage[i], colourFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+			colourBufferImage[i] = Utils::CreateImage(deviceHandle, imageCreateInfo, &colourBufferImageMemory[i]);
+			colourBufferImageView[i] = Utils::CreateImageView(deviceHandle.logicalDevice, colourBufferImage[i], colourFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 	}
 
@@ -678,8 +678,8 @@ namespace Renderer
 
 		for (size_t i = 0; i < swapChainImages.size(); i++)
 		{
-			depthBufferImage[i] = CreateImage(imageCreateInfo, &depthBufferImageMemory[i]);
-			depthBufferImageView[i] = CreateImageView(depthBufferImage[i], depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+			depthBufferImage[i] = Utils::CreateImage(deviceHandle, imageCreateInfo, &depthBufferImageMemory[i]);
+			depthBufferImageView[i] = Utils::CreateImageView(deviceHandle.logicalDevice, depthBufferImage[i], depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 		}
 	}
 
@@ -874,7 +874,7 @@ namespace Renderer
 
 		int32_t textureImgLoc = CreateTextureImage(fileName);
 
-		VkImageView imgView = CreateImageView(textureHandles[textureImgLoc].image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+		VkImageView imgView = Utils::CreateImageView(deviceHandle.logicalDevice, textureHandles[textureImgLoc].image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 		textureImgViews.push_back(imgView);
 
 		int32_t descLoc = renderPipelinePtr->CreateTextureDescriptor(imgView, textureSampler);
@@ -922,7 +922,7 @@ namespace Renderer
 		createImageInfo.useFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		createImageInfo.propFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		texImage = CreateImage(createImageInfo, &texImageMemory);
+		texImage = Utils::CreateImage(deviceHandle, createImageInfo, &texImageMemory);
 
 		// Transition image to be destination for copy operation
 
@@ -1335,82 +1335,6 @@ namespace Renderer
 		}
 
 		throw std::runtime_error("Failed to find a matching format!");
-	}
-
-	VkImage VulkanRenderer::CreateImage(const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory) const
-	{
-		PROFILE_FUNCTION();
-
-		VkImageCreateInfo imageCreateInfo = {};
-		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.extent.width = createImageInfo.width;
-		imageCreateInfo.extent.height = createImageInfo.height;
-		imageCreateInfo.extent.depth = 1;
-		imageCreateInfo.mipLevels = 1;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.format = createImageInfo.format;
-		imageCreateInfo.tiling = createImageInfo.tiling;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageCreateInfo.usage = createImageInfo.useFlags;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VkImage image;
-
-		VkResult vkResult = vkCreateImage(deviceHandle.logicalDevice, &imageCreateInfo, nullptr, &image);
-		if (vkResult != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create image ");
-		}
-
-		VkMemoryRequirements memoryRequirements;
-		vkGetImageMemoryRequirements(deviceHandle.logicalDevice, image, &memoryRequirements);
-
-		VkMemoryAllocateInfo memoryAllocInfo = {};
-		memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		memoryAllocInfo.allocationSize = memoryRequirements.size;
-		memoryAllocInfo.memoryTypeIndex = Utils::FindMemoryTypeIndex(deviceHandle.physicalDevice, memoryRequirements.memoryTypeBits, createImageInfo.propFlags);
-
-		vkResult = vkAllocateMemory(deviceHandle.logicalDevice, &memoryAllocInfo, nullptr, imageMemory);
-		if (vkResult != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to allocate memory for image");
-		}
-
-		vkBindImageMemory(deviceHandle.logicalDevice, image, *imageMemory, 0);
-
-		return image;
-	}
-
-	VkImageView VulkanRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
-	{
-		PROFILE_FUNCTION();
-
-		VkImageViewCreateInfo viewCreateInfo = {};
-		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewCreateInfo.image = image;
-		viewCreateInfo.format = format;
-		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		viewCreateInfo.subresourceRange.aspectMask = aspectFlags;
-		viewCreateInfo.subresourceRange.baseMipLevel = 0;
-		viewCreateInfo.subresourceRange.levelCount = 1;
-		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		viewCreateInfo.subresourceRange.layerCount = 1;
-
-		VkImageView imageView;
-		VkResult result = vkCreateImageView(deviceHandle.logicalDevice, &viewCreateInfo, nullptr, &imageView);
-
-		if (result != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create image view");
-		}
-
-		return imageView;
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
