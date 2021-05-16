@@ -443,6 +443,26 @@ namespace Utilities
 			EndAndSubmitCmdBuffer(transitionImgLytInfo.device, transitionImgLytInfo.cmdPool, transitionImgLytInfo.queue, transferCommandBuffer);
 		}
 
+		static VkShaderModule CreateShaderModule(VkDevice device, const std::vector<char>& code)
+		{
+			PROFILE_FUNCTION();
+
+			VkShaderModuleCreateInfo shaderModuldeCreateInfo = {};
+			shaderModuldeCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			shaderModuldeCreateInfo.codeSize = code.size();
+			shaderModuldeCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+			VkShaderModule shaderModule;
+			VkResult vkResult = vkCreateShaderModule(device, &shaderModuldeCreateInfo, nullptr, &shaderModule);
+
+			if (vkResult != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to create shader module");
+			}
+
+			return shaderModule;
+		}
+
 		static stbi_uc* LoadTextureFile(const std::string& fileName, TextureInfo& texInfo)
 		{
 			PROFILE_FUNCTION();

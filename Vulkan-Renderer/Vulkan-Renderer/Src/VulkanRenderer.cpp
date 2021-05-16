@@ -591,11 +591,11 @@ namespace Renderer
 		auto secondPassVertCode = Utils::ReadFile(COMPILED_SHADER_PATH + std::string("second_subpass.vert") + COMPILED_SHADER_SUFFIX);
 		auto secondPassFragCode = Utils::ReadFile(COMPILED_SHADER_PATH + std::string("second_subpass.frag") + COMPILED_SHADER_SUFFIX);
 
-		VkShaderModule vertexShaderModule = CreateShaderModule(vertCode);
-		VkShaderModule fragmentShaderModule = CreateShaderModule(fragCode);
+		VkShaderModule vertexShaderModule = Utils::CreateShaderModule(deviceHandle.logicalDevice, vertCode);
+		VkShaderModule fragmentShaderModule = Utils::CreateShaderModule(deviceHandle.logicalDevice, fragCode);
 
-		VkShaderModule secondPassVertexShaderModule = CreateShaderModule(secondPassVertCode);
-		VkShaderModule secondPassfragmentShaderModule = CreateShaderModule(secondPassFragCode);
+		VkShaderModule secondPassVertexShaderModule = Utils::CreateShaderModule(deviceHandle.logicalDevice, secondPassVertCode);
+		VkShaderModule secondPassfragmentShaderModule = Utils::CreateShaderModule(deviceHandle.logicalDevice, secondPassFragCode);
 
 		renderPipelinePtr = new RenderPipeline();
 
@@ -1343,26 +1343,6 @@ namespace Renderer
 		}
 
 		return imageView;
-	}
-
-	VkShaderModule VulkanRenderer::CreateShaderModule(const std::vector<char>& code)
-	{
-		PROFILE_FUNCTION();
-
-		VkShaderModuleCreateInfo shaderModuldeCreateInfo = {};
-		shaderModuldeCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		shaderModuldeCreateInfo.codeSize = code.size();
-		shaderModuldeCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-		VkShaderModule shaderModule;
-		VkResult vkResult = vkCreateShaderModule(deviceHandle.logicalDevice, &shaderModuldeCreateInfo, nullptr, &shaderModule);
-
-		if (vkResult != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create shader module");
-		}
-
-		return shaderModule;
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
