@@ -25,7 +25,7 @@ const Mesh* Model::GetMesh(size_t index) const
 	return &meshList[index];
 }
 
-glm::mat4& Model::GetModelMatrix()
+const glm::mat4& Model::GetModelMatrix() const
 {
 	return model;
 }
