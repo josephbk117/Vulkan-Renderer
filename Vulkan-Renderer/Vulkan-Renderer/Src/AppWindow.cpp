@@ -38,17 +38,6 @@ void ApplicationWindow::AppWindow::PollInputs() const
 	glfwPollEvents();
 }
 
-void ApplicationWindow::AppWindow::CreateVulkanWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
-{
-	using namespace Utilities;
-	PROFILE_FUNCTION();
-
-	if (glfwCreateWindowSurface(instance, windowPtr, nullptr, surface) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create vulkan window surface");
-	}
-}
-
 GLFWwindow* ApplicationWindow::AppWindow::GetWindow() const
 {
 	return windowPtr;
