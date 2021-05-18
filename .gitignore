@@ -71,6 +71,7 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+!Vulkan-Renderer/Vulkan-Renderer/Res/**
 *.iobj
 *.pch
 *.pdb
