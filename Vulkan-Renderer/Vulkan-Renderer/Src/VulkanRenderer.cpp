@@ -27,7 +27,7 @@ namespace Renderer
 			CreateLogicalDevice();
 			CreateSwapChain();
 			CreateRenderPass();
-			CreateColorBufferImage();
+			CreateAlbedoBufferImage();
 			CreateNormalBufferImage();
 			CreateDepthBufferImage();
 			CreateRenderPipeline();
@@ -159,11 +159,11 @@ namespace Renderer
 			vkFreeMemory(deviceHandle.logicalDevice, normalBufferImageMemory[i], nullptr);
 		}
 
-		for (size_t i = 0; i < colourBufferImage.size(); i++)
+		for (size_t i = 0; i < albedoBufferImage.size(); i++)
 		{
-			vkDestroyImageView(deviceHandle.logicalDevice, colourBufferImageView[i], nullptr);
-			vkDestroyImage(deviceHandle.logicalDevice, colourBufferImage[i], nullptr);
-			vkFreeMemory(deviceHandle.logicalDevice, colourBufferImageMemory[i], nullptr);
+			vkDestroyImageView(deviceHandle.logicalDevice, albedoBufferImageView[i], nullptr);
+			vkDestroyImage(deviceHandle.logicalDevice, albedoBufferImage[i], nullptr);
+			vkFreeMemory(deviceHandle.logicalDevice, albedoBufferImageMemory[i], nullptr);
 		}
 
 		for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
@@ -500,18 +500,18 @@ namespace Renderer
 		normalAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		normalAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		// Colour attachment
-		VkAttachmentDescription colourAttachment = {};
-		colourAttachment.format = GetSuitableFormat(
+		// Albedo attachment
+		VkAttachmentDescription albedoAttachment = {};
+		albedoAttachment.format = GetSuitableFormat(
 			{ VK_FORMAT_R8G8B8A8_UNORM },
 			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-		colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colourAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colourAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colourAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colourAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		albedoAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		albedoAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		albedoAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		albedoAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		albedoAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		albedoAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		albedoAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 
 		// Normal Attachment reference
@@ -519,12 +519,12 @@ namespace Renderer
 		normalAttachmentReference.attachment = 1;
 		normalAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		// Colour Attachment reference
-		VkAttachmentReference colourAttachmentReference = {};
-		colourAttachmentReference.attachment = 2;
-		colourAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		// Albedo Attachment reference
+		VkAttachmentReference albedoAttachmentReference = {};
+		albedoAttachmentReference.attachment = 2;
+		albedoAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		std::array<VkAttachmentReference, 2> colourAttachments = { normalAttachmentReference, colourAttachmentReference };
+		std::array<VkAttachmentReference, 2> colourAttachments = { normalAttachmentReference, albedoAttachmentReference };
 
 		// Depth Attachment reference
 		VkAttachmentReference depthAttachmentReference = {};
@@ -582,7 +582,7 @@ namespace Renderer
 		subpassDependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		subpassDependencies[0].dependencyFlags = 0;
 
-		// Subpass 1 layout (colour/depth) to subpass 2 layout (shader read)
+		// Subpass 1 layout (normal/albedo/depth) to subpass 2 layout (shader read)
 		subpassDependencies[1].srcSubpass = 0;
 		subpassDependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		subpassDependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -607,7 +607,7 @@ namespace Renderer
 		subpassDependencies[3].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 		subpassDependencies[3].dependencyFlags = 0;
 
-		std::array<VkAttachmentDescription, 4> renderPassAttachments = { swapchainColourAttachment, normalAttachment, colourAttachment, depthAttachment };
+		std::array<VkAttachmentDescription, 4> renderPassAttachments = { swapchainColourAttachment, normalAttachment, albedoAttachment, depthAttachment };
 
 		VkRenderPassCreateInfo renderPassCreateInfo = {};
 		renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -660,7 +660,7 @@ namespace Renderer
 		pipelineCreateInfo.swapchainImageCount = swapChainImages.size();
 		pipelineCreateInfo.minUniformBufferOffset = minUniformBufferOffset;
 		pipelineCreateInfo.normalBufferImageViewPtr = &normalBufferImageView;
-		pipelineCreateInfo.colourBufferImageViewPtr = &colourBufferImageView;
+		pipelineCreateInfo.albedoBufferImageViewPtr = &albedoBufferImageView;
 		pipelineCreateInfo.depthBufferImageViewPtr = &depthBufferImageView;
 
 		renderPipelinePtr->Init(pipelineCreateInfo);
@@ -672,13 +672,13 @@ namespace Renderer
 		vkDestroyShaderModule(deviceHandle.logicalDevice, secondPassfragmentShaderModule, nullptr);
 	}
 
-	void VulkanRenderer::CreateColorBufferImage()
+	void VulkanRenderer::CreateAlbedoBufferImage()
 	{
 		PROFILE_FUNCTION();
 
-		colourBufferImage.resize(swapChainImages.size());
-		colourBufferImageMemory.resize(swapChainImages.size());
-		colourBufferImageView.resize(swapChainImages.size());
+		albedoBufferImage.resize(swapChainImages.size());
+		albedoBufferImageMemory.resize(swapChainImages.size());
+		albedoBufferImageView.resize(swapChainImages.size());
 
 		VkFormat colourFormat = GetSuitableFormat(
 			{ VK_FORMAT_R8G8B8A8_UNORM },
@@ -694,15 +694,15 @@ namespace Renderer
 
 		for (size_t i = 0; i < swapChainImages.size(); i++)
 		{
-			colourBufferImage[i] = CreateImage(imageCreateInfo, &colourBufferImageMemory[i]);
+			albedoBufferImage[i] = CreateImage(imageCreateInfo, &albedoBufferImageMemory[i]);
 
 			CreateImageViewInfo createImageViewInfo{};
-			createImageViewInfo.image = colourBufferImage[i];
+			createImageViewInfo.image = albedoBufferImage[i];
 			createImageViewInfo.format = colourFormat;
 			createImageViewInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 			createImageViewInfo.mipmapCount = 1;
 
-			colourBufferImageView[i] = CreateImageView(createImageViewInfo);
+			albedoBufferImageView[i] = CreateImageView(createImageViewInfo);
 		}
 	}
 
@@ -782,7 +782,7 @@ namespace Renderer
 
 		for (size_t i = 0; i < swapchainFrameBuffers.size(); i++)
 		{
-			std::array<VkImageView, 4> attachments = { swapChainImages[i].imageView, normalBufferImageView[i], colourBufferImageView[i], depthBufferImageView[i] };
+			std::array<VkImageView, 4> attachments = { swapChainImages[i].imageView, normalBufferImageView[i], albedoBufferImageView[i], depthBufferImageView[i] };
 
 			VkFramebufferCreateInfo frameBufferCreateInfo = {};
 			frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

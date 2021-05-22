@@ -687,7 +687,7 @@ void Renderer::RenderPipeline::CreateInputDescriptorSets()
 		// Colour attachment descriptor
 		VkDescriptorImageInfo colourAttachmentDescriptor = {};
 		colourAttachmentDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		colourAttachmentDescriptor.imageView = pipelineCreateInfo.colourBufferImageViewPtr->at(i);
+		colourAttachmentDescriptor.imageView = pipelineCreateInfo.albedoBufferImageViewPtr->at(i);
 		colourAttachmentDescriptor.sampler = VK_NULL_HANDLE;
 
 		// Colour attachment descriptor write

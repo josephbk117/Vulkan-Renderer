@@ -51,9 +51,9 @@ namespace Renderer
 
 		VkCommandPool gfxCommandPool;
 
-		std::vector<VkImage> colourBufferImage;
-		std::vector<VkDeviceMemory> colourBufferImageMemory;
-		std::vector<VkImageView> colourBufferImageView;
+		std::vector<VkImage> albedoBufferImage;
+		std::vector<VkDeviceMemory> albedoBufferImageMemory;
+		std::vector<VkImageView> albedoBufferImageView;
 
 		std::vector<VkImage> normalBufferImage;
 		std::vector<VkDeviceMemory> normalBufferImageMemory;
@@ -85,7 +85,7 @@ namespace Renderer
 		void CreateSwapChain();
 		void CreateRenderPass();
 		void CreateRenderPipeline();
-		void CreateColorBufferImage();
+		void CreateAlbedoBufferImage();
 		void CreateNormalBufferImage();
 		void CreateDepthBufferImage();
 		void CreateFrameBuffers();

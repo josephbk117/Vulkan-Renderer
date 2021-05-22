@@ -24,7 +24,7 @@ namespace Renderer
 			size_t swapchainImageCount = 0;
 			VkDeviceSize minUniformBufferOffset;
 			std::vector<VkImageView>* normalBufferImageViewPtr = nullptr;
-			std::vector<VkImageView>* colourBufferImageViewPtr = nullptr;
+			std::vector<VkImageView>* albedoBufferImageViewPtr = nullptr;
 			std::vector<VkImageView>* depthBufferImageViewPtr = nullptr;
 		};
 
