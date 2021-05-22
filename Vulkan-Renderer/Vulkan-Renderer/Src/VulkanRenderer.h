@@ -55,6 +55,10 @@ namespace Renderer
 		std::vector<VkDeviceMemory> colourBufferImageMemory;
 		std::vector<VkImageView> colourBufferImageView;
 
+		std::vector<VkImage> normalBufferImage;
+		std::vector<VkDeviceMemory> normalBufferImageMemory;
+		std::vector<VkImageView> normalBufferImageView;
+
 		std::vector<VkImage> depthBufferImage;
 		std::vector<VkDeviceMemory> depthBufferImageMemory;
 		std::vector<VkImageView> depthBufferImageView;
@@ -82,6 +86,7 @@ namespace Renderer
 		void CreateRenderPass();
 		void CreateRenderPipeline();
 		void CreateColorBufferImage();
+		void CreateNormalBufferImage();
 		void CreateDepthBufferImage();
 		void CreateFrameBuffers();
 		void CreateCommandPool();
