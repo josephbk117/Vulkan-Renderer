@@ -69,6 +69,14 @@ namespace Utilities
 		uint32_t mipmapCount = 1;
 	};
 
+	struct CreateImageViewInfo
+	{
+		VkImage image;
+		VkFormat format;
+		VkImageAspectFlags aspectFlags;
+		uint32_t mipmapCount = 1;
+	};
+
 	struct CreateBufferInfo
 	{
 		VkPhysicalDevice physicalDevice;

@@ -444,7 +444,14 @@ namespace Renderer
 		{
 			SwapChainImage swapChainImage = {};
 			swapChainImage.image = image;
-			swapChainImage.imageView = CreateImageView(image, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+
+			CreateImageViewInfo createImageViewInfo{};
+			createImageViewInfo.image = image;
+			createImageViewInfo.format = swapChainImageFormat;
+			createImageViewInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+			createImageViewInfo.mipmapCount = 1;
+
+			swapChainImage.imageView = CreateImageView(createImageViewInfo);
 
 			swapChainImages.push_back(swapChainImage);
 		}
@@ -646,7 +653,14 @@ namespace Renderer
 		for (size_t i = 0; i < swapChainImages.size(); i++)
 		{
 			colourBufferImage[i] = CreateImage(imageCreateInfo, &colourBufferImageMemory[i]);
-			colourBufferImageView[i] = CreateImageView(colourBufferImage[i], colourFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+
+			CreateImageViewInfo createImageViewInfo{};
+			createImageViewInfo.image = colourBufferImage[i];
+			createImageViewInfo.format = colourFormat;
+			createImageViewInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+			createImageViewInfo.mipmapCount = 1;
+
+			colourBufferImageView[i] = CreateImageView(createImageViewInfo);
 		}
 	}
 
@@ -673,7 +687,14 @@ namespace Renderer
 		for (size_t i = 0; i < swapChainImages.size(); i++)
 		{
 			depthBufferImage[i] = CreateImage(imageCreateInfo, &depthBufferImageMemory[i]);
-			depthBufferImageView[i] = CreateImageView(depthBufferImage[i], depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+			CreateImageViewInfo createImageViewInfo{};
+			createImageViewInfo.image = depthBufferImage[i];
+			createImageViewInfo.format = depthFormat;
+			createImageViewInfo.aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
+			createImageViewInfo.mipmapCount = 1;
+
+			depthBufferImageView[i] = CreateImageView(createImageViewInfo);
 		}
 	}
 
@@ -807,7 +828,13 @@ namespace Renderer
 		uint32_t mipmapCount = 1;
 		int32_t textureImgLoc = CreateTextureImage(fileName, useMipmaps ? &mipmapCount : nullptr);
 
-		VkImageView imgView = CreateImageView(textureHandles[textureImgLoc].image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipmapCount);
+		CreateImageViewInfo createImageViewInfo{};
+		createImageViewInfo.image = textureHandles[textureImgLoc].image;
+		createImageViewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		createImageViewInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+		createImageViewInfo.mipmapCount = mipmapCount;
+
+		VkImageView imgView = CreateImageView(createImageViewInfo);
 		textureImgViews.push_back(imgView);
 
 		int32_t descLoc = renderPipelinePtr->CreateTextureDescriptor(imgView, textureSampler);
@@ -1413,22 +1440,22 @@ namespace Renderer
 		return image;
 	}
 
-	VkImageView VulkanRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipmapCount /*= 1*/)
+	VkImageView VulkanRenderer::CreateImageView(const CreateImageViewInfo& createImageViewInfo)
 	{
 		PROFILE_FUNCTION();
 
 		VkImageViewCreateInfo viewCreateInfo = {};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewCreateInfo.image = image;
-		viewCreateInfo.format = format;
+		viewCreateInfo.image = createImageViewInfo.image;
+		viewCreateInfo.format = createImageViewInfo.format;
 		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		viewCreateInfo.subresourceRange.aspectMask = aspectFlags;
+		viewCreateInfo.subresourceRange.aspectMask = createImageViewInfo.aspectFlags;
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
-		viewCreateInfo.subresourceRange.levelCount = mipmapCount;
+		viewCreateInfo.subresourceRange.levelCount = createImageViewInfo.mipmapCount;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = 1;
 
