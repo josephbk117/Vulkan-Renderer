@@ -88,8 +88,10 @@ namespace Renderer
 		void CreateCommandBuffers();
 		void CreateSynchronization();
 		void CreateTextureSampler();
-		int32_t CreateTexture(const std::string& fileName);
-		int32_t CreateTextureImage(const std::string& fileName);
+		int32_t CreateTexture(const std::string& fileName, bool useMapMaps = false);
+		/** Will return texture Id and if mipmapCount reference is passed in then will create texture with mipmaps enabled */
+		int32_t CreateTextureImage(const std::string& fileName, uint32_t* mipmapCount = nullptr);
+		void GenerateMipmaps(const CreateMipmapInfo& createMipmapInfo);
 		void RecordCommands(uint32_t currentImageIndex);
 		bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtensions) const;
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physDevice) const;
@@ -102,7 +104,7 @@ namespace Renderer
 		VkExtent2D GetSuitableSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const;
 		VkFormat GetSuitableFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags) const;
 		VkImage CreateImage(const CreateImageInfo& createImageInfo, VkDeviceMemory* imageMemory) const;
-		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+		VkImageView CreateImageView(const CreateImageViewInfo& createImageViewInfo);
 
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 	};
