@@ -66,6 +66,7 @@ namespace Utilities
 		VkImageTiling tiling;
 		VkImageUsageFlags useFlags;
 		VkMemoryPropertyFlags propFlags;
+		uint32_t mipmapCount = 1;
 	};
 
 	struct CreateBufferInfo
@@ -89,6 +90,15 @@ namespace Utilities
 		VkDeviceSize bufferSize;
 	};
 
+	struct CreateMipmapInfo
+	{
+		VkImage image;
+		VkFormat imageFormat;
+		int32_t texWidth = 0;
+		int32_t texHeight = 0;
+		uint32_t mipLevels = 1;
+	};
+
 	struct CopyImageBufferInfo
 	{
 		VkDevice device;
@@ -108,6 +118,7 @@ namespace Utilities
 		VkImage image;
 		VkImageLayout oldLayout;
 		VkImageLayout newLayout;
+		uint32_t mipmapCount = 1;
 	};
 
 	struct TextureInfo
@@ -414,7 +425,7 @@ namespace Utilities
 			imgMemoryBarrier.image = transitionImgLytInfo.image;
 			imgMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			imgMemoryBarrier.subresourceRange.baseMipLevel = 0;
-			imgMemoryBarrier.subresourceRange.levelCount = 1;
+			imgMemoryBarrier.subresourceRange.levelCount = transitionImgLytInfo.mipmapCount;
 			imgMemoryBarrier.subresourceRange.baseArrayLayer = 0;
 			imgMemoryBarrier.subresourceRange.layerCount = 1;
 
