@@ -23,6 +23,7 @@ namespace Renderer
 			VkRenderPass renderPass;
 			size_t swapchainImageCount = 0;
 			VkDeviceSize minUniformBufferOffset;
+			std::vector<VkImageView>* positionBufferImageViewPtr = nullptr;
 			std::vector<VkImageView>* normalBufferImageViewPtr = nullptr;
 			std::vector<VkImageView>* albedoBufferImageViewPtr = nullptr;
 			std::vector<VkImageView>* depthBufferImageViewPtr = nullptr;

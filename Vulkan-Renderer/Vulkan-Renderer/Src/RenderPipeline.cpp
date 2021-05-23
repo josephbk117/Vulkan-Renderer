@@ -151,7 +151,7 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 	
-	std::array<VkPipelineColorBlendAttachmentState, 2> colourBlendAttachmentStates = { colorBlendAttachmentState, colorBlendAttachmentState };
+	std::array<VkPipelineColorBlendAttachmentState, 3> colourBlendAttachmentStates = { colorBlendAttachmentState, colorBlendAttachmentState, colorBlendAttachmentState };
 
 	colorBlendingCreateInfo.attachmentCount = static_cast<uint32_t>(colourBlendAttachmentStates.size());
 	colorBlendingCreateInfo.pAttachments = colourBlendAttachmentStates.data();
@@ -438,28 +438,35 @@ void Renderer::RenderPipeline::CreateDescriptorSetLayout()
 	}
 
 	// Create input attachment image descriptor set layout
+	// position input binding
+	VkDescriptorSetLayoutBinding positionInputLayoutBinding = {};
+	positionInputLayoutBinding.binding = 0;
+	positionInputLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+	positionInputLayoutBinding.descriptorCount = 1;
+	positionInputLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 	// normal input binding
 	VkDescriptorSetLayoutBinding normalInputLayoutBinding = {};
-	normalInputLayoutBinding.binding = 0;
+	normalInputLayoutBinding.binding = 1;
 	normalInputLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 	normalInputLayoutBinding.descriptorCount = 1;
 	normalInputLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	// colour input binding
 	VkDescriptorSetLayoutBinding colourInputLayoutBinding = {};
-	colourInputLayoutBinding.binding = 1;
+	colourInputLayoutBinding.binding = 2;
 	colourInputLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 	colourInputLayoutBinding.descriptorCount = 1;
 	colourInputLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	// depth input binding
 	VkDescriptorSetLayoutBinding depthInputLayoutBinding = {};
-	depthInputLayoutBinding.binding = 2;
+	depthInputLayoutBinding.binding = 3;
 	depthInputLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 	depthInputLayoutBinding.descriptorCount = 1;
 	depthInputLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 3> inputBindings = { normalInputLayoutBinding, colourInputLayoutBinding, depthInputLayoutBinding };
+	std::array<VkDescriptorSetLayoutBinding, 4> inputBindings = { positionInputLayoutBinding, normalInputLayoutBinding, colourInputLayoutBinding, depthInputLayoutBinding };
 
 	// Create descriptor set layout for input attachments
 	VkDescriptorSetLayoutCreateInfo inputLayoutCreateInfo = {};
@@ -554,6 +561,11 @@ void Renderer::RenderPipeline::CreateDescriptorPool()
 	}
 
 	// Create input attachment descriptor pool
+	// position attachment pool
+	VkDescriptorPoolSize positionInputPoolSize = {};
+	positionInputPoolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+	positionInputPoolSize.descriptorCount = static_cast<uint32_t>(pipelineCreateInfo.swapchainImageCount);
+
 	// normal attachment pool
 	VkDescriptorPoolSize normalInputPoolSize = {};
 	normalInputPoolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
@@ -569,7 +581,7 @@ void Renderer::RenderPipeline::CreateDescriptorPool()
 	depthInputPoolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 	depthInputPoolSize.descriptorCount = static_cast<uint32_t>(pipelineCreateInfo.swapchainImageCount);
 
-	std::array<VkDescriptorPoolSize, 3> inputPoolSizes = { normalInputPoolSize, colourInputPoolSize, depthInputPoolSize };
+	std::array<VkDescriptorPoolSize, 4> inputPoolSizes = { positionInputPoolSize, normalInputPoolSize, colourInputPoolSize, depthInputPoolSize };
 	// Create input attachment pool
 
 	VkDescriptorPoolCreateInfo inputPoolCreateInfo = {};
@@ -668,6 +680,22 @@ void Renderer::RenderPipeline::CreateInputDescriptorSets()
 
 	for (size_t i = 0; i < pipelineCreateInfo.swapchainImageCount; i++)
 	{
+		// Position attachment descriptor
+		VkDescriptorImageInfo positionAttachmentDescriptor = {};
+		positionAttachmentDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		positionAttachmentDescriptor.imageView = pipelineCreateInfo.positionBufferImageViewPtr->at(i);
+		positionAttachmentDescriptor.sampler = VK_NULL_HANDLE;
+
+		// Position attachment descriptor write
+		VkWriteDescriptorSet positionWrite = {};
+		positionWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		positionWrite.dstSet = inputDescriptorSets[i];
+		positionWrite.dstBinding = 0;
+		positionWrite.dstArrayElement = 0;
+		positionWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		positionWrite.descriptorCount = 1;
+		positionWrite.pImageInfo = &positionAttachmentDescriptor;
+
 		// Normal attachment descriptor
 		VkDescriptorImageInfo normalAttachmentDescriptor = {};
 		normalAttachmentDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -678,7 +706,7 @@ void Renderer::RenderPipeline::CreateInputDescriptorSets()
 		VkWriteDescriptorSet normalWrite = {};
 		normalWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		normalWrite.dstSet = inputDescriptorSets[i];
-		normalWrite.dstBinding = 0;
+		normalWrite.dstBinding = 1;
 		normalWrite.dstArrayElement = 0;
 		normalWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		normalWrite.descriptorCount = 1;
@@ -694,7 +722,7 @@ void Renderer::RenderPipeline::CreateInputDescriptorSets()
 		VkWriteDescriptorSet colourWrite = {};
 		colourWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		colourWrite.dstSet = inputDescriptorSets[i];
-		colourWrite.dstBinding = 1;
+		colourWrite.dstBinding = 2;
 		colourWrite.dstArrayElement = 0;
 		colourWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		colourWrite.descriptorCount = 1;
@@ -710,13 +738,13 @@ void Renderer::RenderPipeline::CreateInputDescriptorSets()
 		VkWriteDescriptorSet depthWrite = {};
 		depthWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		depthWrite.dstSet = inputDescriptorSets[i];
-		depthWrite.dstBinding = 2;
+		depthWrite.dstBinding = 3;
 		depthWrite.dstArrayElement = 0;
 		depthWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		depthWrite.descriptorCount = 1;
 		depthWrite.pImageInfo = &depthAttachmentDescriptor;
 
-		std::array<VkWriteDescriptorSet, 3> setWrites = { normalWrite, colourWrite, depthWrite };
+		std::array<VkWriteDescriptorSet, 4> setWrites = { positionWrite, normalWrite, colourWrite, depthWrite };
 
 		vkUpdateDescriptorSets(pipelineCreateInfo.device.logicalDevice, static_cast<uint32_t>(setWrites.size()), setWrites.data(), 0, nullptr);
 

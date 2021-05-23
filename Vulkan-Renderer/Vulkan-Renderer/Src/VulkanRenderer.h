@@ -55,6 +55,10 @@ namespace Renderer
 		std::vector<VkDeviceMemory> albedoBufferImageMemory;
 		std::vector<VkImageView> albedoBufferImageView;
 
+		std::vector<VkImage> positionBufferImage;
+		std::vector<VkDeviceMemory> positionBufferImageMemory;
+		std::vector<VkImageView> positionBufferImageView;
+
 		std::vector<VkImage> normalBufferImage;
 		std::vector<VkDeviceMemory> normalBufferImageMemory;
 		std::vector<VkImageView> normalBufferImageView;
@@ -86,6 +90,7 @@ namespace Renderer
 		void CreateRenderPass();
 		void CreateRenderPipeline();
 		void CreateAlbedoBufferImage();
+		void CreatePositionBufferImage();
 		void CreateNormalBufferImage();
 		void CreateDepthBufferImage();
 		void CreateFrameBuffers();
