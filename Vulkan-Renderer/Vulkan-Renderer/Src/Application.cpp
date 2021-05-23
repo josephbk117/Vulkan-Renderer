@@ -30,7 +30,7 @@ void Application::Run()
 			angle += deltaTime;
 
 			glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, glm::sin(angle) * 50.0f));
-			glm::mat4 rot = glm::rotate(translation, glm::radians(angle * 10.0f), GLOBAL_FORWARD);
+			glm::mat4 rot = glm::rotate(translation, glm::radians(angle * 10.0f) * 0.5f, GLOBAL_FORWARD);
 			rot = glm::rotate(rot, glm::radians(angle * 20.0f), GLOBAL_UP);
 
 			appWindow.PollInputs();
