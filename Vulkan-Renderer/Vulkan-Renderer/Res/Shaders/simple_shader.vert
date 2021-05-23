@@ -21,12 +21,15 @@ layout(push_constant) uniform PushModel
 	mat4 model;
 } pushModel;
 
-layout(location = 0) out vec3 outCol;
-layout(location = 1) out vec2 outUV;
+layout(location = 0) out vec3 outPos;
+layout(location = 1) out vec3 outNorm;
+layout(location = 2) out vec2 outUV;
 
 void main()
 {
-	outCol = (pushModel.model * vec4(normal, 0.0)).rgb;
+	outNorm = (pushModel.model * vec4(normal, 0.0)).rgb;
 	outUV = uv;
-	gl_Position = uboVP.projection * uboVP.view * pushModel.model * vec4(pos, 1.0);
+	vec4 worldPos = pushModel.model * vec4(pos, 1.0);
+	outPos = worldPos.rgb;
+	gl_Position = uboVP.projection * uboVP.view * worldPos;
 }

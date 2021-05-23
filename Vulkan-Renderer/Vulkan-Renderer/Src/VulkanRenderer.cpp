@@ -27,7 +27,9 @@ namespace Renderer
 			CreateLogicalDevice();
 			CreateSwapChain();
 			CreateRenderPass();
-			CreateColorBufferImage();
+			CreateAlbedoBufferImage();
+			CreatePositionBufferImage();
+			CreateNormalBufferImage();
 			CreateDepthBufferImage();
 			CreateRenderPipeline();
 			CreateFrameBuffers();
@@ -151,11 +153,25 @@ namespace Renderer
 			vkFreeMemory(deviceHandle.logicalDevice, depthBufferImageMemory[i], nullptr);
 		}
 
-		for (size_t i = 0; i < colourBufferImage.size(); i++)
+		for (size_t i = 0; i < positionBufferImage.size(); i++)
 		{
-			vkDestroyImageView(deviceHandle.logicalDevice, colourBufferImageView[i], nullptr);
-			vkDestroyImage(deviceHandle.logicalDevice, colourBufferImage[i], nullptr);
-			vkFreeMemory(deviceHandle.logicalDevice, colourBufferImageMemory[i], nullptr);
+			vkDestroyImageView(deviceHandle.logicalDevice, positionBufferImageView[i], nullptr);
+			vkDestroyImage(deviceHandle.logicalDevice, positionBufferImage[i], nullptr);
+			vkFreeMemory(deviceHandle.logicalDevice, positionBufferImageMemory[i], nullptr);
+		}
+
+		for (size_t i = 0; i < normalBufferImage.size(); i++)
+		{
+			vkDestroyImageView(deviceHandle.logicalDevice, normalBufferImageView[i], nullptr);
+			vkDestroyImage(deviceHandle.logicalDevice, normalBufferImage[i], nullptr);
+			vkFreeMemory(deviceHandle.logicalDevice, normalBufferImageMemory[i], nullptr);
+		}
+
+		for (size_t i = 0; i < albedoBufferImage.size(); i++)
+		{
+			vkDestroyImageView(deviceHandle.logicalDevice, albedoBufferImageView[i], nullptr);
+			vkDestroyImage(deviceHandle.logicalDevice, albedoBufferImage[i], nullptr);
+			vkFreeMemory(deviceHandle.logicalDevice, albedoBufferImageMemory[i], nullptr);
 		}
 
 		for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
@@ -479,33 +495,71 @@ namespace Renderer
 		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		// Colour attachment
-		VkAttachmentDescription colourAttachment = {};
-		colourAttachment.format = GetSuitableFormat(
+		// Normal attachment
+		VkAttachmentDescription positionAttachment = {};
+		positionAttachment.format = GetSuitableFormat(
+			{ VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT },
+			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		positionAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		positionAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		positionAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		positionAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		positionAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		positionAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		positionAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Normal attachment
+		VkAttachmentDescription normalAttachment = {};
+		normalAttachment.format = GetSuitableFormat(
 			{ VK_FORMAT_R8G8B8A8_UNORM },
 			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-		colourAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colourAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colourAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colourAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colourAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		normalAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		normalAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		normalAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		normalAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		normalAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		normalAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		normalAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		// Colour Attachment reference
-		VkAttachmentReference colourAttachmentReference = {};
-		colourAttachmentReference.attachment = 1;
-		colourAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		// Albedo attachment
+		VkAttachmentDescription albedoAttachment = {};
+		albedoAttachment.format = GetSuitableFormat(
+			{ VK_FORMAT_R8G8B8A8_UNORM },
+			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		albedoAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		albedoAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		albedoAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		albedoAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		albedoAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		albedoAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		albedoAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Position Attachment reference
+		VkAttachmentReference positionAttachmentReference = {};
+		positionAttachmentReference.attachment = 1;
+		positionAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Normal Attachment reference
+		VkAttachmentReference normalAttachmentReference = {};
+		normalAttachmentReference.attachment = 2;
+		normalAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Albedo Attachment reference
+		VkAttachmentReference albedoAttachmentReference = {};
+		albedoAttachmentReference.attachment = 3;
+		albedoAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		std::array<VkAttachmentReference, 3> colourAttachments = { positionAttachmentReference, normalAttachmentReference, albedoAttachmentReference };
 
 		// Depth Attachment reference
 		VkAttachmentReference depthAttachmentReference = {};
-		depthAttachmentReference.attachment = 2;
+		depthAttachmentReference.attachment = 4;
 		depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		// Set up Subpass 1
 		subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpasses[0].colorAttachmentCount = 1;
-		subpasses[0].pColorAttachments = &colourAttachmentReference;
+		subpasses[0].colorAttachmentCount = static_cast<uint32_t>(colourAttachments.size());
+		subpasses[0].pColorAttachments = colourAttachments.data();
 		subpasses[0].pDepthStencilAttachment = &depthAttachmentReference;
 
 		// Subpass 2 attachments - Input Attachments
@@ -527,11 +581,15 @@ namespace Renderer
 		swapchainColourAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		// References to attachments that subpass will take input from
-		std::array<VkAttachmentReference, 2> inputReferences;
+		std::array<VkAttachmentReference, 4> inputReferences;
 		inputReferences[0].attachment = 1;
 		inputReferences[0].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		inputReferences[1].attachment = 2;
 		inputReferences[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		inputReferences[2].attachment = 3;
+		inputReferences[2].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		inputReferences[3].attachment = 4;
+		inputReferences[3].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		// Set up Subpass 2
 		subpasses[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -540,7 +598,9 @@ namespace Renderer
 		subpasses[1].inputAttachmentCount = static_cast<uint32_t>(inputReferences.size());
 		subpasses[1].pInputAttachments = inputReferences.data();
 
-		std::array<VkSubpassDependency, 3> subpassDependencies{};
+		// Subpass dependencies
+
+		std::array<VkSubpassDependency, 5> subpassDependencies{};
 		subpassDependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 		subpassDependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 		subpassDependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
@@ -549,7 +609,7 @@ namespace Renderer
 		subpassDependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		subpassDependencies[0].dependencyFlags = 0;
 
-		// Subpass 1 layout (colour/depth) to subpass 2 layout (shader read)
+		// Subpass 1 layout (position/normal/albedo/depth) to subpass 2 layout (shader read)
 		subpassDependencies[1].srcSubpass = 0;
 		subpassDependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		subpassDependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -560,13 +620,29 @@ namespace Renderer
 
 		subpassDependencies[2].srcSubpass = 0;
 		subpassDependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		subpassDependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		subpassDependencies[2].dstSubpass = VK_SUBPASS_EXTERNAL;
-		subpassDependencies[2].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		subpassDependencies[2].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		subpassDependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		subpassDependencies[2].dstSubpass = 1;
+		subpassDependencies[2].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		subpassDependencies[2].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 		subpassDependencies[2].dependencyFlags = 0;
 
-		std::array<VkAttachmentDescription, 3> renderPassAttachments = { swapchainColourAttachment, colourAttachment, depthAttachment };
+		subpassDependencies[3].srcSubpass = 0;
+		subpassDependencies[3].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpassDependencies[3].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		subpassDependencies[3].dstSubpass = 1;
+		subpassDependencies[3].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		subpassDependencies[3].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		subpassDependencies[3].dependencyFlags = 0;
+
+		subpassDependencies[4].srcSubpass = 0;
+		subpassDependencies[4].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpassDependencies[4].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		subpassDependencies[4].dstSubpass = VK_SUBPASS_EXTERNAL;
+		subpassDependencies[4].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		subpassDependencies[4].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		subpassDependencies[4].dependencyFlags = 0;
+
+		std::array<VkAttachmentDescription, 5> renderPassAttachments = { swapchainColourAttachment, positionAttachment, normalAttachment, albedoAttachment, depthAttachment };
 
 		VkRenderPassCreateInfo renderPassCreateInfo = {};
 		renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -618,7 +694,9 @@ namespace Renderer
 		pipelineCreateInfo.renderPass = renderPass;
 		pipelineCreateInfo.swapchainImageCount = swapChainImages.size();
 		pipelineCreateInfo.minUniformBufferOffset = minUniformBufferOffset;
-		pipelineCreateInfo.colourBufferImageViewPtr = &colourBufferImageView;
+		pipelineCreateInfo.positionBufferImageViewPtr = &positionBufferImageView;
+		pipelineCreateInfo.normalBufferImageViewPtr = &normalBufferImageView;
+		pipelineCreateInfo.albedoBufferImageViewPtr = &albedoBufferImageView;
 		pipelineCreateInfo.depthBufferImageViewPtr = &depthBufferImageView;
 
 		renderPipelinePtr->Init(pipelineCreateInfo);
@@ -630,13 +708,13 @@ namespace Renderer
 		vkDestroyShaderModule(deviceHandle.logicalDevice, secondPassfragmentShaderModule, nullptr);
 	}
 
-	void VulkanRenderer::CreateColorBufferImage()
+	void VulkanRenderer::CreateAlbedoBufferImage()
 	{
 		PROFILE_FUNCTION();
 
-		colourBufferImage.resize(swapChainImages.size());
-		colourBufferImageMemory.resize(swapChainImages.size());
-		colourBufferImageView.resize(swapChainImages.size());
+		albedoBufferImage.resize(swapChainImages.size());
+		albedoBufferImageMemory.resize(swapChainImages.size());
+		albedoBufferImageView.resize(swapChainImages.size());
 
 		VkFormat colourFormat = GetSuitableFormat(
 			{ VK_FORMAT_R8G8B8A8_UNORM },
@@ -652,15 +730,83 @@ namespace Renderer
 
 		for (size_t i = 0; i < swapChainImages.size(); i++)
 		{
-			colourBufferImage[i] = CreateImage(imageCreateInfo, &colourBufferImageMemory[i]);
+			albedoBufferImage[i] = CreateImage(imageCreateInfo, &albedoBufferImageMemory[i]);
 
 			CreateImageViewInfo createImageViewInfo{};
-			createImageViewInfo.image = colourBufferImage[i];
+			createImageViewInfo.image = albedoBufferImage[i];
 			createImageViewInfo.format = colourFormat;
 			createImageViewInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 			createImageViewInfo.mipmapCount = 1;
 
-			colourBufferImageView[i] = CreateImageView(createImageViewInfo);
+			albedoBufferImageView[i] = CreateImageView(createImageViewInfo);
+		}
+	}
+
+	void VulkanRenderer::CreatePositionBufferImage()
+	{
+		PROFILE_FUNCTION();
+
+		positionBufferImage.resize(swapChainImages.size());
+		positionBufferImageMemory.resize(swapChainImages.size());
+		positionBufferImageView.resize(swapChainImages.size());
+
+		VkFormat colourFormat = GetSuitableFormat(
+			{ VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT },
+			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+		CreateImageInfo imageCreateInfo = {};
+		imageCreateInfo.format = colourFormat;
+		imageCreateInfo.width = swapChainExtent.width;
+		imageCreateInfo.height = swapChainExtent.height;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.useFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		imageCreateInfo.propFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		for (size_t i = 0; i < swapChainImages.size(); i++)
+		{
+			positionBufferImage[i] = CreateImage(imageCreateInfo, &positionBufferImageMemory[i]);
+
+			CreateImageViewInfo createImageViewInfo{};
+			createImageViewInfo.image = positionBufferImage[i];
+			createImageViewInfo.format = colourFormat;
+			createImageViewInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+			createImageViewInfo.mipmapCount = 1;
+
+			positionBufferImageView[i] = CreateImageView(createImageViewInfo);
+		}
+	}
+
+	void VulkanRenderer::CreateNormalBufferImage()
+	{
+		PROFILE_FUNCTION();
+
+		normalBufferImage.resize(swapChainImages.size());
+		normalBufferImageMemory.resize(swapChainImages.size());
+		normalBufferImageView.resize(swapChainImages.size());
+
+		VkFormat colourFormat = GetSuitableFormat(
+			{ VK_FORMAT_R8G8B8A8_UNORM },
+			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+		CreateImageInfo imageCreateInfo = {};
+		imageCreateInfo.format = colourFormat;
+		imageCreateInfo.width = swapChainExtent.width;
+		imageCreateInfo.height = swapChainExtent.height;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.useFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		imageCreateInfo.propFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		for (size_t i = 0; i < swapChainImages.size(); i++)
+		{
+			normalBufferImage[i] = CreateImage(imageCreateInfo, &normalBufferImageMemory[i]);
+
+			CreateImageViewInfo createImageViewInfo{};
+			createImageViewInfo.image = normalBufferImage[i];
+			createImageViewInfo.format = colourFormat;
+			createImageViewInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+			createImageViewInfo.mipmapCount = 1;
+
+			normalBufferImageView[i] = CreateImageView(createImageViewInfo);
 		}
 	}
 
@@ -706,7 +852,7 @@ namespace Renderer
 
 		for (size_t i = 0; i < swapchainFrameBuffers.size(); i++)
 		{
-			std::array<VkImageView, 3> attachments = { swapChainImages[i].imageView, colourBufferImageView[i], depthBufferImageView[i] };
+			std::array<VkImageView, 5> attachments = { swapChainImages[i].imageView, positionBufferImageView[i], normalBufferImageView[i], albedoBufferImageView[i], depthBufferImageView[i] };
 
 			VkFramebufferCreateInfo frameBufferCreateInfo = {};
 			frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1070,10 +1216,12 @@ namespace Renderer
 		renderpassBeginInfo.renderArea.offset = { 0, 0 };
 		renderpassBeginInfo.renderArea.extent = swapChainExtent;
 
-		std::array<VkClearValue, 3> clearValues = {};
-		clearValues[0].color = { 1.0f, 0.0f, 1.0f, 1.0f };
-		clearValues[1].color = { 0.3f, 0.5f, 0.6f, 1.0f };
-		clearValues[2].depthStencil.depth = 1.0f;
+		std::array<VkClearValue, 5> clearValues = {};
+		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[1].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[2].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[3].color = { 0.3f, 0.5f, 0.6f, 1.0f };
+		clearValues[4].depthStencil.depth = 1.0f;
 		renderpassBeginInfo.pClearValues = clearValues.data();
 		renderpassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 
