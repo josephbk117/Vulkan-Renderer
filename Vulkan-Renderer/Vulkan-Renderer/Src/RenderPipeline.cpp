@@ -258,57 +258,14 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	CreateInputDescriptorSets();
 }
 
-VkPipeline Renderer::RenderPipeline::GetPipeline() const
-{
-	return gfxPipeline;
-}
-
 VkPipeline Renderer::RenderPipeline::GetSecondPipeline() const
 {
 	return secondPipeline;
 }
 
-VkPipelineLayout Renderer::RenderPipeline::GetPipelineLayout() const
-{
-	return pipelineLayout;
-}
-
 VkPipelineLayout Renderer::RenderPipeline::GetSecondPipelineLayout() const
 {
 	return secondPipelineLayout;
-}
-
-VkDescriptorSet& Renderer::RenderPipeline::GetDescriptorSet(uint32_t index)
-{
-	return (descriptorSets[index]);
-}
-
-VkDescriptorSet& Renderer::RenderPipeline::GetSamplerDescriptorSet(uint32_t index)
-{
-	return samplerDescriptorSets[index];
-}
-
-VkDescriptorSet& Renderer::RenderPipeline::GetInputDescriptorSet(uint32_t index)
-{
-	return inputDescriptorSets[index];
-}
-
-void Renderer::RenderPipeline::SetPerspectiveProjectionMatrix(float fov, float aspectRatio, float nearPlane, float farPlane)
-{
-	PROFILE_FUNCTION();
-
-	uboViewProjection.projection = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
-	uboViewProjection.projection[1][1] *= -1.0f;
-}
-
-void Renderer::RenderPipeline::SetViewMatrixFromLookAt(const glm::vec3& location, const glm::vec3& lookAt, const glm::vec3& upVec)
-{
-	uboViewProjection.view = glm::lookAt(location, lookAt, upVec);
-}
-
-void Renderer::RenderPipeline::SetModelMatrix(const glm::mat4& mat)
-{
-
 }
 
 void Renderer::RenderPipeline::UpdateUniformBuffers(uint32_t imageIndex, const std::vector<Model>& modelList)

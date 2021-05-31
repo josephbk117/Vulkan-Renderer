@@ -43,7 +43,6 @@ namespace Renderer
 
 			renderPipelinePtr->SetPerspectiveProjectionMatrix(glm::radians(60.0f), (float)swapChainExtent.width / swapChainExtent.height, 0.1f, 1000.0f);
 			renderPipelinePtr->SetViewMatrixFromLookAt(glm::vec3(0.0f, 0.0f, 200.0f), glm::vec3(0.0f), GLOBAL_UP);
-			renderPipelinePtr->SetModelMatrix(glm::mat4(1.0f));
 
 		}
 		catch (const std::runtime_error& e)

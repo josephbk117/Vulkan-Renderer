@@ -167,6 +167,7 @@
     <ClCompile Include="Src\Mesh.cpp" />
     <ClCompile Include="Src\MemoryPool.cpp" />
     <ClCompile Include="Src\RenderPipeline.cpp" />
+    <ClCompile Include="Src\RenderPipelineBase.cpp" />
     <ClCompile Include="Src\Shader.cpp" />
     <ClCompile Include="Src\Application.cpp" />
     <ClCompile Include="Src\AppWindow.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="Src\MemoryPool.h" />
     <ClInclude Include="Src\ConstantsAndDefines.h" />
     <ClInclude Include="Src\RenderPipeline.h" />
+    <ClInclude Include="Src\RenderPipelineBase.h" />
     <ClInclude Include="Src\Shader.h" />
     <ClInclude Include="Src\Application.h" />
     <ClInclude Include="Src\AppWindow.h" />
