@@ -4,6 +4,8 @@
 #include "ConstantsAndDefines.h"
 #include "GfxPipelineCreationSets/RasterizationStateSets.h"
 #include "GfxPipelineCreationSets/InputAssemblyStateSets.h"
+#include "GfxPipelineCreationSets/MultisampleStateSets.h"
+#include "GfxPipelineCreationSets/ColourBlendAttachmentStateSets.h"
 #include <array>
 
 Renderer::RenderPipeline::~RenderPipeline()
@@ -141,27 +143,15 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 
 	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = RasterizationSets::Default();
 
-	VkPipelineMultisampleStateCreateInfo multiSampleCreateInfo = {};
-	multiSampleCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multiSampleCreateInfo.sampleShadingEnable = VK_FALSE;
-	multiSampleCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	VkPipelineMultisampleStateCreateInfo multiSampleCreateInfo = MultisampleStateSets::Default();
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachmentState = ColourBlendAttachmentStateSets::Default();
+	
+	std::array<VkPipelineColorBlendAttachmentState, 3> colourBlendAttachmentStates = { colorBlendAttachmentState, colorBlendAttachmentState, colorBlendAttachmentState };
 
 	VkPipelineColorBlendStateCreateInfo colorBlendingCreateInfo = {};
 	colorBlendingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	colorBlendingCreateInfo.logicOpEnable = VK_FALSE;
-
-	VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {};
-	colorBlendAttachmentState.blendEnable = VK_TRUE;
-	colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-	
-	std::array<VkPipelineColorBlendAttachmentState, 3> colourBlendAttachmentStates = { colorBlendAttachmentState, colorBlendAttachmentState, colorBlendAttachmentState };
-
 	colorBlendingCreateInfo.attachmentCount = static_cast<uint32_t>(colourBlendAttachmentStates.size());
 	colorBlendingCreateInfo.pAttachments = colourBlendAttachmentStates.data();
 

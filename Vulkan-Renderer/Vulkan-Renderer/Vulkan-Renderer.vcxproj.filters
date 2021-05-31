@@ -92,6 +92,12 @@
     <ClInclude Include="Src\GfxPipelineCreationSets\InputAssemblyStateSets.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Src\GfxPipelineCreationSets\MultisampleStateSets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\GfxPipelineCreationSets\ColourBlendAttachmentStateSets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Res\Shaders\simple_shader.vert">
