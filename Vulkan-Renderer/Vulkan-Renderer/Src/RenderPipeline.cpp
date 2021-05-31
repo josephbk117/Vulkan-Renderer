@@ -6,6 +6,7 @@
 #include "GfxPipelineCreationSets/InputAssemblyStateSets.h"
 #include "GfxPipelineCreationSets/MultisampleStateSets.h"
 #include "GfxPipelineCreationSets/ColourBlendAttachmentStateSets.h"
+#include "GfxPipelineCreationSets/DepthStencilStateSets.h"
 #include <array>
 
 Renderer::RenderPipeline::~RenderPipeline()
@@ -155,13 +156,7 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	colorBlendingCreateInfo.attachmentCount = static_cast<uint32_t>(colourBlendAttachmentStates.size());
 	colorBlendingCreateInfo.pAttachments = colourBlendAttachmentStates.data();
 
-	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
-	depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencilCreateInfo.depthTestEnable = VK_TRUE;
-	depthStencilCreateInfo.depthWriteEnable = VK_TRUE;
-	depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-	depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;
-	depthStencilCreateInfo.stencilTestEnable = VK_FALSE;
+	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = DepthStencilStateSets::Default();
 
 	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
 	graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
