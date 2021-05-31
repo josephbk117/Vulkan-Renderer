@@ -176,9 +176,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\GfxPipelineCreationSets\ColourBlendAttachmentStateSets.h" />
+    <ClInclude Include="Src\GfxPipelineCreationSets\DepthStencilStateSets.h" />
     <ClInclude Include="Src\GfxPipelineCreationSets\InputAssemblyStateSets.h" />
     <ClInclude Include="Src\GfxPipelineCreationSets\MultisampleStateSets.h" />
     <ClInclude Include="Src\GfxPipelineCreationSets\RasterizationStateSets.h" />
+    <ClInclude Include="Src\GfxPipelineCreationSets\ViewportStateCreationSets.h" />
     <ClInclude Include="Src\Model.h" />
     <ClInclude Include="Src\Mesh.h" />
     <ClInclude Include="Src\MemoryPool.h" />

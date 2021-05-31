@@ -98,6 +98,12 @@
     <ClInclude Include="Src\GfxPipelineCreationSets\ColourBlendAttachmentStateSets.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Src\GfxPipelineCreationSets\DepthStencilStateSets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\GfxPipelineCreationSets\ViewportStateCreationSets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Res\Shaders\simple_shader.vert">

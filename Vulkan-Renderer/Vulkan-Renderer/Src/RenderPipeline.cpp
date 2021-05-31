@@ -7,6 +7,7 @@
 #include "GfxPipelineCreationSets/MultisampleStateSets.h"
 #include "GfxPipelineCreationSets/ColourBlendAttachmentStateSets.h"
 #include "GfxPipelineCreationSets/DepthStencilStateSets.h"
+#include "GfxPipelineCreationSets/ViewportStateCreationSets.h"
 #include <array>
 
 Renderer::RenderPipeline::~RenderPipeline()
@@ -135,12 +136,7 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	scissor.offset = { 0,0 };
 	scissor.extent = pipelineCreateInfo.extent;
 
-	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {};
-	viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewportStateCreateInfo.viewportCount = 1;
-	viewportStateCreateInfo.pViewports = &viewport;
-	viewportStateCreateInfo.scissorCount = 1;
-	viewportStateCreateInfo.pScissors = &scissor;
+	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = ViewportStateCreationSets::Default(&viewport, &scissor);
 
 	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = RasterizationSets::Default();
 
