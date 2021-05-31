@@ -2,6 +2,8 @@
 #include "Utils.h"
 #include <iostream>
 #include "ConstantsAndDefines.h"
+#include "GfxPipelineCreationSets/RasterizationStateSets.h"
+#include "GfxPipelineCreationSets/InputAssemblyStateSets.h"
 #include <array>
 
 Renderer::RenderPipeline::~RenderPipeline()
@@ -41,6 +43,24 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 
 	CreateDescriptorSetLayout();
 	CreatePushConstantRange();
+
+	// Pipeline layout
+
+	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { descriptorSetLayout, samplerSetLayout };
+
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
+	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
+
+	VkResult vkResult = vkCreatePipelineLayout(pipelineCreateInfo.device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+
+	if (vkResult != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create pipeline layout");
+	}
 
 	VkPipelineShaderStageCreateInfo vertexShaderCreateInfo = {};
 	vertexShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -98,10 +118,7 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertAttributeDescs.size());
 	vertexInputCreateInfo.pVertexAttributeDescriptions = vertAttributeDescs.data();
 
-	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
-	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	inputAssembly.primitiveRestartEnable = VK_FALSE;
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly = InputAssemblySets::Default();
 
 	VkViewport viewport = {};
 	viewport.x = 0.0f;
@@ -122,15 +139,7 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 	viewportStateCreateInfo.scissorCount = 1;
 	viewportStateCreateInfo.pScissors = &scissor;
 
-	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = {};
-	rasterizerCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	rasterizerCreateInfo.depthClampEnable = VK_TRUE; // Change to true for correct shadow map generation, Needed GPU feature
-	rasterizerCreateInfo.rasterizerDiscardEnable = VK_FALSE; // If enabled all fragments are discarded, Used to get info from other shader stages only
-	rasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_FILL; // Needed GPU feature for other values
-	rasterizerCreateInfo.lineWidth = 1.0f; // Needed GPU feature for other values
-	rasterizerCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizerCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	rasterizerCreateInfo.depthBiasEnable = VK_FALSE; // Shadow mapping would probably need it
+	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = RasterizationSets::Default();
 
 	VkPipelineMultisampleStateCreateInfo multiSampleCreateInfo = {};
 	multiSampleCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -155,24 +164,6 @@ void Renderer::RenderPipeline::Init(const RenderPipelineCreateInfo& pipelineCrea
 
 	colorBlendingCreateInfo.attachmentCount = static_cast<uint32_t>(colourBlendAttachmentStates.size());
 	colorBlendingCreateInfo.pAttachments = colourBlendAttachmentStates.data();
-
-	// Pipeline layout
-
-	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { descriptorSetLayout, samplerSetLayout };
-
-	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
-
-	VkResult vkResult = vkCreatePipelineLayout(pipelineCreateInfo.device.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-
-	if (vkResult != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create pipeline layout");
-	}
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
 	depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
